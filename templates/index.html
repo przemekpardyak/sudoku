@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Play Sudoku — a beautiful, interactive Sudoku web game." />
+  <title>Sudoku · Play Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-mark">9×9</div>
+        <div class="brand-text">
+          <h1>Sudoku</h1>
+          <p>Beautifully simple. Infinitely replayable.</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-label">Time</span>
+          <span class="stat-value" id="timer">00:00</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Mistakes</span>
+          <span class="stat-value" id="mistakes">0</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="game">
+      <div class="board" id="board" role="grid" aria-label="Sudoku board"></div>
+
+      <aside class="panel">
+        <section class="controls">
+          <h2 class="panel-title">Difficulty</h2>
+          <div class="difficulty">
+            <button class="diff-btn" data-difficulty="30">Easy</button>
+            <button class="diff-btn active" data-difficulty="40">Medium</button>
+            <button class="diff-btn" data-difficulty="50">Hard</button>
+            <button class="diff-btn" data-difficulty="58">Expert</button>
+          </div>
+        </section>
+
+        <section class="controls">
+          <div class="mode-toggle">
+            <button class="mode-btn active" id="finalModeBtn" data-mode="final">
+              <span class="mode-icon">✏️</span>
+              <span class="mode-label">Final</span>
+            </button>
+            <button class="mode-btn" id="notesModeBtn" data-mode="notes">
+              <span class="mode-icon">📝</span>
+              <span class="mode-label">Notes</span>
+            </button>
+          </div>
+        </section>
+
+        <section class="controls">
+          <h2 class="panel-title">Number Pad</h2>
+          <div class="numpad" id="numpad">
+            <button class="num-btn" data-num="1">1</button>
+            <button class="num-btn" data-num="2">2</button>
+            <button class="num-btn" data-num="3">3</button>
+            <button class="num-btn" data-num="4">4</button>
+            <button class="num-btn" data-num="5">5</button>
+            <button class="num-btn" data-num="6">6</button>
+            <button class="num-btn" data-num="7">7</button>
+            <button class="num-btn" data-num="8">8</button>
+            <button class="num-btn" data-num="9">9</button>
+            <button class="num-btn erase" data-num="0">⌫</button>
+          </div>
+        </section>
+
+        <section class="actions">
+          <button class="action-btn primary" id="newGameBtn">New Game</button>
+          <div class="undo-redo">
+            <button class="action-btn" id="undoBtn" title="Undo (Ctrl+Z)">↶ Undo</button>
+            <button class="action-btn" id="redoBtn" title="Redo (Ctrl+Y)">↷ Redo</button>
+          </div>
+          <button class="action-btn" id="checkBtn">Check</button>
+          <button class="action-btn hint-hold" id="hintBtn">Hint</button>
+        </section>
+
+        <p class="hint-text" id="hintText"></p>
+      </aside>
+    </main>
+
+    <footer class="footer">
+      <span>Built with Flask · Click a cell, then pick a number</span>
+    </footer>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="modal">
+      <h2 id="modalTitle">🎉 You solved it!</h2>
+      <p id="modalBody"></p>
+      <button class="action-btn primary" id="modalNewGame">Play Again</button>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

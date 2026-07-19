@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Sudoku README</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; background: #0f1117; color: #e4e6eb; line-height: 1.6; }
+h1 { color: #7c5cff; border-bottom: 2px solid #2a2d3a; padding-bottom: 10px; }
+h2 { color: #9b82ff; margin-top: 32px; border-bottom: 1px solid #2a2d3a; padding-bottom: 6px; }
+h3 { color: #b18cff; margin-top: 24px; }
+a { color: #6db3ff; }
+code { background: #1a1d2a; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; }
+pre { background: #1a1d2a; padding: 16px; border-radius: 8px; overflow-x: auto; border: 1px solid #2a2d3a; }
+pre code { background: none; padding: 0; }
+table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+th, td { border: 1px solid #2a2d3a; padding: 8px 12px; text-align: left; }
+th { background: #1a1d2a; }
+img { max-width: 100%; }
+details { background: #1a1d2a; border-radius: 8px; padding: 12px 16px; margin: 12px 0; border: 1px solid #2a2d3a; }
+summary { cursor: pointer; font-weight: 600; }
+hr { border: none; border-top: 1px solid #2a2d3a; margin: 24px 0; }
+</style>
+</head><body><h1 id="sudoku">🎯 Sudoku</h1>
+<p>A modern, interactive Sudoku web application built with <strong>Python</strong> and <strong>Flask</strong>.
+Generate fresh puzzles, play in your browser, and track your time and mistakes.</p>
+<p><img alt="Tech" src="https://img.shields.io/badge/Python-3.11-blue" /> <img alt="Tech" src="https://img.shields.io/badge/Flask-3.0.3-black" /></p>
+<hr />
+<h2 id="features">✨ Features</h2>
+<h3 id="core-gameplay">Core Gameplay</h3>
+<ul>
+<li><strong>Procedural Puzzle Generation</strong> — every game produces a unique, solvable Sudoku via a backtracking algorithm</li>
+<li><strong>4 Difficulty Levels</strong> — Easy, Medium, Hard, Expert (30–58 empty cells)</li>
+<li><strong>Smart Highlighting</strong> — selecting a cell highlights its row, column, 3×3 box, and all matching numbers</li>
+<li><strong>Real-time Validation</strong> — incorrect entries are flagged instantly in red</li>
+<li><strong>Mistake Tracker</strong> — keeps count of wrong placements</li>
+<li><strong>Check Button</strong> — scan the entire board for errors at any time</li>
+<li><strong>3×3 Box Dividers</strong> — clear visual grid lines separating the nine 3×3 boxes</li>
+<li><strong>Built-in Timer</strong> — tracks elapsed time; win screen shows your final stats</li>
+<li><strong>Modern UI</strong> — dark glassmorphism theme, gradient accents, smooth micro-animations</li>
+</ul>
+<h3 id="pencil-marks-notes">Pencil Marks (Notes)</h3>
+<ul>
+<li>Toggle between <strong>Final</strong> (✏️) and <strong>Notes</strong> (📝) mode using the buttons in the right panel, or press <code>N</code></li>
+<li>In <strong>Notes mode</strong>, clicking a number (1–9) toggles a small pencil mark in the selected cell's 3×3 mini-grid</li>
+<li>In <strong>Final mode</strong>, clicking a number places the big number. This hides the cell's pencil marks and auto-removes that same digit from pencil marks in the same row, column, and 3×3 box</li>
+<li>Erasing a final number reveals the preserved pencil marks again</li>
+</ul>
+<h3 id="smart-numpad">Smart Numpad</h3>
+<ul>
+<li>Number pad buttons <strong>auto-disable</strong> when all 9 instances of a digit have been placed on the board</li>
+<li>Disabled buttons are greyed out and non-interactive</li>
+<li>Buttons re-enable automatically when a digit is removed</li>
+</ul>
+<h3 id="undo-redo">Undo / Redo</h3>
+<ul>
+<li>Full <strong>undo/redo</strong> support for every action: placing numbers, toggling notes, erasing, and applying hints</li>
+<li>Up to <strong>200 history snapshots</strong> tracked (board state, notes, given cells, mistakes)</li>
+<li>Buttons in the panel auto-disable when the stack is empty</li>
+<li>Starting a new game clears both stacks</li>
+</ul>
+<h3 id="hint-press-to-preview">Hint (Press to Preview)</h3>
+<ul>
+<li><strong>Press the Hint button</strong> — a random empty cell reveals its correct number in <strong>amber/orange</strong> with a glowing border</li>
+<li><strong>Release the button</strong> — the preview stays; nothing is committed yet</li>
+<li><strong>Click the amber cell</strong> to apply the hint (committed as a permanent given)</li>
+<li><strong>Click anywhere else</strong> or <strong>press Escape</strong> to dismiss the preview without applying</li>
+</ul>
+<hr />
+<h2 id="how-to-play">🎮 How to Play</h2>
+<ol>
+<li>Click any empty cell to select it (or use arrow keys to navigate).</li>
+<li>Toggle between <strong>Final</strong> and <strong>Notes</strong> mode using the buttons in the right panel (or press <code>N</code>).</li>
+<li>Enter a number (1–9) by:</li>
+<li>Clicking the on-screen number pad, <strong>or</strong></li>
+<li>Pressing the corresponding key on your keyboard.</li>
+<li>To erase a number, press <strong>Backspace/Delete</strong> or click the <strong>⌫</strong> button.</li>
+<li>The board flags incorrect numbers in red — try again!</li>
+<li>Use the tools on the right panel when needed:</li>
+<li><strong>Check</strong> — highlights all current errors</li>
+<li><strong>Hint</strong> — press to preview a correct cell, then click it to apply (or dismiss)</li>
+<li><strong>Undo / Redo</strong> — revert or reapply your last actions</li>
+<li>Fill every cell correctly to win. Your time and mistake count are shown on the win screen.</li>
+</ol>
+<h3 id="using-pencil-marks-notes-mode">Using Pencil Marks (Notes Mode)</h3>
+<ul>
+<li>Toggle between <strong>Final</strong> (✏️) and <strong>Notes</strong> (📝) mode using the buttons in the right panel, or press <code>N</code> on your keyboard.</li>
+<li>In <strong>Notes mode</strong>, clicking a number (1–9) toggles a small pencil mark in the selected cell's 3×3 mini-grid.</li>
+<li>In <strong>Final mode</strong>, clicking a number places the big number. This hides the cell's pencil marks and auto-removes the same digit from pencil marks in the row, column, and 3×3 box.</li>
+<li>Press <strong>Backspace</strong> or click <strong>⌫</strong> to erase — if the cell has a final number, only the number is removed and preserved pencil marks reappear. Pressing erase again clears all pencil marks.</li>
+</ul>
+<h3 id="using-the-hint">Using the Hint</h3>
+<ol>
+<li><strong>Press</strong> (click and hold) the Hint button — a random empty cell lights up in amber showing its correct number.</li>
+<li><strong>Release</strong> the button — the preview stays on screen.</li>
+<li><strong>Click the amber cell</strong> to commit the hint (it becomes a permanent given and is added to the undo history).</li>
+<li>To <strong>dismiss without applying</strong>, click anywhere else on the board or press <code>Escape</code>.</li>
+</ol>
+<h3 id="using-undo-redo">Using Undo / Redo</h3>
+<ul>
+<li>Click the <strong>↶ Undo</strong> button to revert your last action (or press <code>Ctrl+Z</code>)</li>
+<li>Click the <strong>↷ Redo</strong> button to reapply a reverted action (or press <code>Ctrl+Y</code> / <code>Ctrl+Shift+Z</code>)</li>
+<li>Works for all actions: placing numbers, toggling notes, erasing, and applying hints</li>
+<li>Up to 200 steps are tracked</li>
+</ul>
+<h3 id="difficulty-levels">Difficulty Levels</h3>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Empty Cells</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Easy</td>
+<td>30</td>
+<td>Few blanks, great for beginners</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>40</td>
+<td>Balanced challenge</td>
+</tr>
+<tr>
+<td>Hard</td>
+<td>50</td>
+<td>Tough logical deductions required</td>
+</tr>
+<tr>
+<td>Expert</td>
+<td>58</td>
+<td>Minimal clues, for seasoned players</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="project-structure">📁 Project Structure</h2>
+<pre><code>sudoku/
+├── app.py              # Flask application and API endpoints
+├── sudoku.py           # Puzzle generator &amp; backtracking solver
+├── requirements.txt    # Python dependencies
+├── README.md           # This file
+├── static/
+│   ├── styles.css      # Dark glassmorphism theme &amp; animations
+│   └── app.js          # Game logic: rendering, input, validation, undo/redo, hints
+└── templates/
+    └── index.html      # Main game UI
+</code></pre>
+<h3 id="file-responsibilities">File Responsibilities</h3>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>app.py</code></td>
+<td>Flask server exposing <code>/</code> (game page) and <code>/api/new-game</code> (puzzle)</td>
+</tr>
+<tr>
+<td><code>sudoku.py</code></td>
+<td>Core logic: <code>generate_puzzle()</code>, <code>generate_solved_board()</code>, <code>_solve()</code></td>
+</tr>
+<tr>
+<td><code>templates/index.html</code></td>
+<td>HTML structure: board, numpad, mode toggle, undo/redo, hint, win modal</td>
+</tr>
+<tr>
+<td><code>static/styles.css</code></td>
+<td>Visual design: layout, colors, animations, disabled states, hint preview</td>
+</tr>
+<tr>
+<td><code>static/app.js</code></td>
+<td>Client logic: cell selection, number/notes placement, undo/redo, numpad disable, hint preview, timer, win detection</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="getting-started">🚀 Getting Started</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li><strong>Python 3.8+</strong> (tested with 3.11)</li>
+<li><strong>pip</strong> (Python package manager)</li>
+</ul>
+<h3 id="standard-installation-running">Standard Installation &amp; Running</h3>
+<pre><code class="language-bash"># 1. Navigate to the project folder
+cd /usr/local/google/home/ppardyak/Dogfood/sudoku
+
+# 2. (Optional) Create and activate a virtual environment
+python3 -m venv venv
+source venv/bin/activate     # on Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Start the Flask server
+python3 app.py
+</code></pre>
+<p>The app will be available at <strong><a href="http://localhost:5000">http://localhost:5000</a></strong>.</p>
+<h3 id="alternative-virtualenv-without-ensurepip-corporate-environments">Alternative: Virtualenv Without <code>ensurepip</code> (Corporate Environments)</h3>
+<p>If <code>python3 -m venv</code> fails because <code>ensurepip</code> is not available (common in restricted corporate environments), you can bootstrap pip manually:</p>
+<pre><code class="language-bash"># 1. Navigate to the project folder
+cd /usr/local/google/home/ppardyak/Dogfood/sudoku
+
+# 2. Create a venv without pip
+python3 -m venv --without-pip venv
+
+# 3. Bootstrap pip via get-pip.py
+curl -sS https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+venv/bin/python3 /tmp/get-pip.py --quiet
+
+# 4. Install Flask into the venv
+venv/bin/python3 -m pip install -r requirements.txt
+
+# 5. Start the Flask server using the venv Python
+venv/bin/python3 app.py
+</code></pre>
+<h3 id="development-mode">Development Mode</h3>
+<p>The server runs in debug mode by default (<code>app.run(debug=True)</code>), so changes to
+Python files will auto-reload the server. Static files (JS/CSS) are served as-is —
+do a hard refresh in your browser (<code>Ctrl+Shift+R</code>) after editing them.</p>
+<hr />
+<h2 id="keyboard-shortcuts">⌨️ Keyboard Shortcuts</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1</code> – <code>9</code></td>
+<td>Place the number in the selected cell (final or notes mode)</td>
+</tr>
+<tr>
+<td><code>Backspace</code> / <code>Delete</code> / <code>0</code></td>
+<td>Erase the selected cell</td>
+</tr>
+<tr>
+<td><code>N</code></td>
+<td>Toggle between Final and Notes mode</td>
+</tr>
+<tr>
+<td><code>Ctrl+Z</code></td>
+<td>Undo last action</td>
+</tr>
+<tr>
+<td><code>Ctrl+Y</code> or <code>Ctrl+Shift+Z</code></td>
+<td>Redo last undone action</td>
+</tr>
+<tr>
+<td><code>Escape</code></td>
+<td>Dismiss hint preview</td>
+</tr>
+<tr>
+<td><code>↑</code> <code>↓</code> <code>←</code> <code>→</code></td>
+<td>Move the selection between cells</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="api-reference">🔌 API Reference</h2>
+<h3 id="get"><code>GET /</code></h3>
+<p>Returns the main HTML game page.</p>
+<h3 id="get-apinew-gamedifficultyint"><code>GET /api/new-game?difficulty=&lt;int&gt;</code></h3>
+<p>Generates a new Sudoku puzzle and its solution.</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>difficulty</code></td>
+<td>int</td>
+<td><code>40</code></td>
+<td>Number of cells to remove (30–58 recommended)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  &quot;puzzle&quot;: [[6, 0, 1, ...], ...],
+  &quot;solution&quot;: [[6, 9, 1, ...], ...]
+}
+</code></pre>
+<ul>
+<li><code>puzzle</code>: 9×9 grid where <code>0</code> represents an empty cell</li>
+<li><code>solution</code>: 9×9 grid with the complete, solved board</li>
+</ul>
+<hr />
+<h2 id="how-puzzle-generation-works">🧠 How Puzzle Generation Works</h2>
+<p>The generator in <a href="sudoku.py"><code>sudoku.py</code></a> uses a classic <strong>backtracking algorithm</strong>:</p>
+<ol>
+<li><strong>Fill diagonal 3×3 boxes</strong> with random permutations of 1–9.
+   (Diagonal boxes don't share rows/columns, so they can be filled independently.)</li>
+<li><strong>Solve the rest</strong> via backtracking to produce a fully solved board.</li>
+<li><strong>Remove cells</strong> randomly up to the requested difficulty count.</li>
+</ol>
+<p>This guarantees every generated puzzle has a valid unique solution.</p>
+<hr />
+<h2 id="troubleshooting">🛠️ Troubleshooting</h2>
+<details>
+<summary><b>ModuleNotFoundError: No module named 'flask'</b></summary>
+
+Flask isn't installed. Run:
+
+
+<pre><code class="language-bash">pip install -r requirements.txt
+</code></pre>
+
+
+If pip is unavailable, install pip first:
+
+
+<pre><code class="language-bash">python3 -m ensurepip --upgrade
+</code></pre>
+
+
+If `ensurepip` is not available, use the alternative venv method in [Getting Started](#alternative-virtualenv-without-ensurepip-corporate-environments).
+
+</details>
+
+<details>
+<summary><b>"The virtual environment was not created successfully because ensurepip is not available"</b></summary>
+
+On Debian/Ubuntu systems, either install the venv package:
+
+
+<pre><code class="language-bash">apt install python3.11-venv
+</code></pre>
+
+
+Or create the venv without pip and bootstrap it manually:
+
+
+<pre><code class="language-bash">python3 -m venv --without-pip venv
+curl -sS https://bootstrap.pypa.io/get-pip.py -o /tmp/get-pip.py
+venv/bin/python3 /tmp/get-pip.py --quiet
+venv/bin/python3 -m pip install -r requirements.txt
+</code></pre>
+
+
+</details>
+
+<details>
+<summary><b>Port 5000 already in use</b></summary>
+
+Another process is using the port. Either stop it or change the port in `app.py`:
+
+
+<pre><code class="language-python">app.run(debug=True, host=&quot;0.0.0.0&quot;, port=5001)
+</code></pre>
+
+
+</details>
+
+<details>
+<summary><b>Corporate environment blocking pip installs</b></summary>
+
+If you're behind a package install restriction (e.g., Corp Airlock), either:
+- Use a pre-approved virtual environment image, or
+- Request an exception at your organization's package governance portal.
+- Alternatively, bootstrap pip via `get-pip.py` inside a `--without-pip` venv (see [Getting Started](#alternative-virtualenv-without-ensurepip-corporate-environments)).
+
+</details>
+
+<details>
+<summary><b>Changes not showing in browser</b></summary>
+
+Static files (JS/CSS) are cached by the browser. Do a **hard refresh**:
+- **Windows/Linux**: `Ctrl+Shift+R`
+- **Mac**: `Cmd+Shift+R`
+
+</details>
+
+<hr />
+<h2 id="license">📝 License</h2>
+<p>This project is provided as-is for educational and personal use.</p>
+<hr />
+<p align="center">Built with 🧡 using Flask</p></body></html>
