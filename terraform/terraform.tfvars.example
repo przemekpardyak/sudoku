@@ -1,0 +1,13 @@
+# Example variable definitions for `terraform apply -var-file=terraform.tfvars`.
+# Copy to terraform.tfvars and edit before running.
+
+project_id             = "your-gcp-project-id"
+region                 = "us-central1"
+app_name               = "sudoku"
+image_tag              = "latest"
+concurrency            = 80
+max_instance_count     = 10
+min_instance_count     = 0
+memory                 = "512Mi"
+cpu                    = "1"
+allow_unauthenticated  = true

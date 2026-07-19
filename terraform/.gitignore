@@ -1,0 +1,14 @@
+# Terraform state. (For production, move this to a GCS backend — see README.md.)
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.tfstate.info
+.terraform.lock.hcl

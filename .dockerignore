@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.gitkeep
+terraform/
+*.tfstate
+*.tfstate.*
+.terraform/
+README.html
+README.md
+.DS_Store
