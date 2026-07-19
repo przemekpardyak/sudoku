@@ -6,7 +6,8 @@
  */
 
 locals {
-  image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.app_name}-repo/${var.app_name}:${var.image_tag}"
+  image               = "${var.region}-docker.pkg.dev/${var.project_id}/${var.app_name}-repo/${var.app_name}:${var.image_tag}"
+  run_service_account = var.service_account_email
 }
 
 resource "google_cloud_run_v2_service" "app" {
@@ -33,12 +34,8 @@ resource "google_cloud_run_v2_service" "app" {
       max_instance_count = var.max_instance_count
     }
 
-    dynamic "service_account" {
-      for_each = var.service_account_email != null ? [1] : []
-      content {
-        email = var.service_account_email
-      }
-    }
+    # service_account_email, if provided, is attached to the revision.
+    service_account = local.run_service_account
   }
 
   # Traffic routes 100% to the latest revision.

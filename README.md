@@ -175,6 +175,162 @@ do a hard refresh in your browser (`Ctrl+Shift+R`) after editing them.
 
 ---
 
+## ☁️ Deploy to Google Cloud (Cloud Run + Terraform)
+
+This app ships with Terraform code that deploys it to **Google Cloud Run** — a fully managed, serverless container platform with built-in HTTPS, automatic scaling (including scale-to-zero), and per-request billing.
+
+### What gets created
+
+| Resource | Purpose |
+|----------|---------|
+| Artifact Registry repo (`sudoku-repo`) | Stores the Docker image |
+| Cloud Run service (`sudoku`) | Serves the Flask app via gunicorn on port 8080 |
+| `roles/run.invoker` IAM binding | Allows public, unauthenticated access |
+
+### Prerequisites
+
+- A **Google Cloud project** with billing enabled
+- The following CLIs installed:
+  - [`gcloud`](https://cloud.google.com/sdk/docs/install) (Google Cloud CLI)
+  - [`terraform`](https://developer.hashicorp.com/terraform/downloads) ≥ 1.5
+  - [`docker`](https://docs.docker.com/get-docker/)
+- Authenticated credentials:
+  ```bash
+  gcloud auth login
+  gcloud auth application-default login   # Terraform uses these creds
+  ```
+
+### Install Terraform (Linux / Debian / rodete)
+
+```bash
+# 1. Fetch the latest stable version
+TF_VERSION=$(curl -sL https://api.releases.hashicorp.com/v1/releases/terraform/latest \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['version'])")
+
+# 2. Download the Linux amd64 binary
+curl -sSL -o /tmp/terraform.zip \
+  "https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip"
+
+# 3. Unzip and install to ~/.local/bin (no sudo required)
+unzip -o /tmp/terraform.zip -d /tmp/terraform-bin
+mkdir -p "$HOME/.local/bin"
+mv /tmp/terraform-bin/terraform "$HOME/.local/bin/terraform"
+chmod +x "$HOME/.local/bin/terraform"
+rm -rf /tmp/terraform.zip /tmp/terraform-bin
+
+# 4. Ensure ~/.local/bin is on PATH (one-time)
+grep -q 'HOME/.local/bin' "$HOME/.bashrc" \
+  || echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$HOME/.bashrc"
+source "$HOME/.bashrc"
+
+# 5. Verify
+terraform version
+```
+
+### Option A — One-command deploy (recommended)
+
+The included [deploy.sh](deploy.sh) script runs preflight checks, applies Terraform, builds and pushes the Docker image, and deploys a new Cloud Run revision:
+
+```bash
+cd /usr/local/google/home/ppardyak/Dogfood/sudoku
+PROJECT_ID=your-gcp-project ./deploy.sh
+```
+
+Optional environment variables:
+
+| Var          | Default       | Description                              |
+|--------------|---------------|------------------------------------------|
+| `PROJECT_ID` | *(required)*  | GCP project ID                           |
+| `REGION`     | `us-central1` | GCP region                               |
+| `APP_NAME`   | `sudoku`      | Service + repo name                      |
+| `IMAGE_TAG`  | `latest`      | Container image tag                     |
+| `TF_ARGS`    | *(empty)*     | Extra args to `terraform apply` (e.g. `-auto-approve`) |
+
+On success, the script prints the public HTTPS URL of the deployed service.
+
+### Option B — Manual step-by-step
+
+```bash
+# 1. Set your project
+gcloud config set project your-gcp-project
+gcloud config set compute/region us-central1
+
+# 2. Apply Terraform (creates Artifact Registry repo + Cloud Run service)
+cd terraform
+terraform init
+terraform apply -var="project_id=your-gcp-project"
+
+# 3. Configure Docker auth for Artifact Registry
+gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+# 4. Build and push the image
+IMAGE="us-central1-docker.pkg.dev/your-gcp-project/sudoku-repo/sudoku:latest"
+docker build -t "$IMAGE" ..
+docker push "$IMAGE"
+
+# 5. Deploy the new revision to Cloud Run
+gcloud run deploy sudoku \
+  --image="$IMAGE" \
+  --region=us-central1 \
+  --port=8080 \
+  --allow-unauthenticated \
+  --memory=512Mi --cpu=1 \
+  --concurrency=80 --min-instances=0 --max-instances=10
+
+# 6. Get the URL
+gcloud run services describe sudoku --region=us-central1 --format='value(status.url)'
+```
+
+### Configuration variables
+
+All variables are in [terraform/variables.tf](terraform/variables.tf). Override with `-var` flags or via a `terraform.tfvars` file (see [terraform.tfvars.example](terraform/terraform.tfvars.example)):
+
+```bash
+terraform apply \
+  -var="project_id=your-gcp-project" \
+  -var="region=europe-west1" \
+  -var="min_instance_count=1" \
+  -var="memory=1Gi"
+```
+
+| Variable                  | Default       | Description                                  |
+|---------------------------|---------------|----------------------------------------------|
+| `project_id`              | *(required)*  | GCP project ID                               |
+| `region`                  | `us-central1` | GCP region for all resources                 |
+| `app_name`                | `sudoku`      | Logical name prefix for resources            |
+| `image_tag`               | `latest`      | Container image tag to deploy               |
+| `service_account_email`   | `null`        | Custom SA for the Cloud Run revision         |
+| `concurrency`             | `80`          | Max concurrent requests per instance         |
+| `max_instance_count`      | `10`          | Max container instances                      |
+| `min_instance_count`      | `0`           | Min instances (0 = scale to zero)            |
+| `memory`                  | `512Mi`       | Memory limit per instance                    |
+| `cpu`                     | `1`           | CPU limit per instance                       |
+| `allow_unauthenticated`   | `true`        | Allow public unauthenticated invocations    |
+
+### Outputs
+
+After `terraform apply`, the following are printed:
+
+| Output                    | Description                                |
+|---------------------------|--------------------------------------------|
+| `cloud_run_service_url`  | Public HTTPS URL of the deployed service   |
+| `artifact_registry_image`| Full image path Cloud Run pulls from       |
+| `cloud_run_service_name` | Name of the Cloud Run service              |
+
+### Teardown
+
+To remove everything Terraform created (service, repo, IAM binding):
+
+```bash
+cd terraform
+terraform destroy -var="project_id=your-gcp-project"
+```
+
+> [!NOTE]
+> Terraform state is stored locally by default. For production use, add a [GCS backend](https://developer.hashicorp.com/terraform/language/backend/gcs) to `terraform/providers.tf` so state is shared and versioned centrally.
+
+---
+
 ## ⌨️ Keyboard Shortcuts
 
 | Key               | Action                          |
