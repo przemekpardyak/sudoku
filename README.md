@@ -179,13 +179,43 @@ do a hard refresh in your browser (`Ctrl+Shift+R`) after editing them.
 
 This app ships with Terraform code that deploys it to **Google Cloud Run** — a fully managed, serverless container platform with built-in HTTPS, automatic scaling (including scale-to-zero), and per-request billing.
 
+### Infrastructure architecture
+
+```mermaid
+flowchart LR
+    subgraph "Your machine"
+        Dev["Developer"]
+        Proxy["gcloud run services proxy<br/>localhost:8080"]
+    end
+
+    subgraph "Google Cloud project"
+        AR["Artifact Registry<br/>sudoku-repo"]
+        CB["Cloud Build"]
+        CR["Cloud Run service: sudoku<br/>(gunicorn on :8080)"]
+        IAM["IAM: roles/run.invoker<br/>→ user:you@example.com"]
+    end
+
+    Dev -->|"deploy.sh"| CB
+    CB -->|"push image"| AR
+    AR -->|"pull image"| CR
+    Dev -->|"local proxy (default)"| Proxy -->|"auth token"| CR
+    Dev -.->|"direct URL (needs token)"| CR
+    IAM -.->|"authorizes"| CR
+```
+
+**Request flow (default — local proxy):** Browser → `localhost:8080` → `gcloud run services proxy` injects your OAuth identity token → Cloud Run verifies against the IAM `roles/run.invoker` binding → Flask app responds.
+
+**Optional IAP flow:** Browser → Global HTTPS Load Balancer → IAP (Google login redirect) → Backend Service → Serverless NEG → Cloud Run. See [Optional: IAP in front of Cloud Run](#optional-iap-in-front-of-cloud-run) below.
+
 ### What gets created
 
-| Resource | Purpose |
-|----------|---------|
-| Artifact Registry repo (`sudoku-repo`) | Stores the Docker image |
-| Cloud Run service (`sudoku`) | Serves the Flask app via gunicorn on port 8080 |
-| `roles/run.invoker` IAM binding | Allows public, unauthenticated access |
+| Resource | Terraform file | Purpose |
+|----------|----------------|---------|
+| Enabled APIs | [providers.tf](terraform/providers.tf) | Cloud Run, Artifact Registry, Cloud Build, Compute, IAP, and others |
+| Artifact Registry repo (`sudoku-repo`) | [artifact_registry.tf](terraform/artifact_registry.tf) | Stores the Docker image |
+| Cloud Run service (`sudoku`) | [cloud_run.tf](terraform/cloud_run.tf) | Serves the Flask app via gunicorn on port 8080 |
+| `roles/run.invoker` IAM binding | [cloud_run.tf](terraform/cloud_run.tf) | Grants the authenticated user permission to invoke the service |
+| *(optional)* IAP brand, client, LB, NEG | [iap.tf](terraform/iap.tf) | Identity-Aware Proxy + global HTTPS Load Balancer (see below) |
 
 ### Prerequisites
 
@@ -193,7 +223,7 @@ This app ships with Terraform code that deploys it to **Google Cloud Run** — a
 - The following CLIs installed:
   - [`gcloud`](https://cloud.google.com/sdk/docs/install) (Google Cloud CLI)
   - [`terraform`](https://developer.hashicorp.com/terraform/downloads) ≥ 1.5
-  - [`docker`](https://docs.docker.com/get-docker/)
+  - *Docker is **not** required* — the deploy script uses Google Cloud Build for image builds
 - Authenticated credentials:
   ```bash
   gcloud auth login
@@ -227,9 +257,15 @@ source "$HOME/.bashrc"
 terraform version
 ```
 
-### Option A — One-command deploy (recommended)
+### Deploy — Option A: One-command (recommended)
 
-The included [deploy.sh](deploy.sh) script runs preflight checks, applies Terraform, builds and pushes the Docker image, and deploys a new Cloud Run revision:
+The included [deploy.sh](deploy.sh) script orchestrates the full deploy in three phases:
+
+| Phase | What happens |
+|-------|--------------|
+| 1. Bootstrap | `terraform apply` (targeted) enables APIs and creates the Artifact Registry repo |
+| 2. Build | `gcloud builds submit` builds the Docker image in Cloud Build and pushes it to Artifact Registry |
+| 3. Deploy | `terraform apply` (full) creates the Cloud Run service + IAM, then `gcloud run deploy` rolls out a new revision |
 
 ```bash
 cd /usr/local/google/home/ppardyak/Dogfood/sudoku
@@ -246,34 +282,38 @@ Optional environment variables:
 | `IMAGE_TAG`  | `latest`      | Container image tag                     |
 | `TF_ARGS`    | *(empty)*     | Extra args to `terraform apply` (e.g. `-auto-approve`) |
 
-On success, the script prints the public HTTPS URL of the deployed service.
+On success, the script prints the Cloud Run service URL and the image path.
 
-### Option B — Manual step-by-step
+> [!NOTE]
+> The deploy script uses **Cloud Build** (not local Docker) to build the image, so you don't need Docker installed or the `docker` group permission.
+
+### Deploy — Option B: Manual step-by-step
 
 ```bash
 # 1. Set your project
 gcloud config set project your-gcp-project
 gcloud config set compute/region us-central1
 
-# 2. Apply Terraform (creates Artifact Registry repo + Cloud Run service)
+# 2. Apply Terraform — Phase 1: APIs + Artifact Registry repo
 cd terraform
 terraform init
+terraform apply \
+  -var="project_id=your-gcp-project" \
+  -target=google_project_service.enabled_apis \
+  -target=google_artifact_registry_repository.app_repo
+
+# 3. Build & push the image via Cloud Build (no local Docker needed)
+IMAGE="us-central1-docker.pkg.dev/your-gcp-project/sudoku-repo/sudoku:latest"
+gcloud builds submit .. --tag="$IMAGE"
+
+# 4. Apply Terraform — Phase 2: Cloud Run service + IAM
 terraform apply -var="project_id=your-gcp-project"
 
-# 3. Configure Docker auth for Artifact Registry
-gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-
-# 4. Build and push the image
-IMAGE="us-central1-docker.pkg.dev/your-gcp-project/sudoku-repo/sudoku:latest"
-docker build -t "$IMAGE" ..
-docker push "$IMAGE"
-
-# 5. Deploy the new revision to Cloud Run
+# 5. Deploy a fresh revision pointing at the pushed image
 gcloud run deploy sudoku \
   --image="$IMAGE" \
   --region=us-central1 \
   --port=8080 \
-  --allow-unauthenticated \
   --memory=512Mi --cpu=1 \
   --concurrency=80 --min-instances=0 --max-instances=10
 
@@ -305,7 +345,12 @@ terraform apply \
 | `min_instance_count`      | `0`           | Min instances (0 = scale to zero)            |
 | `memory`                  | `512Mi`       | Memory limit per instance                    |
 | `cpu`                     | `1`           | CPU limit per instance                       |
-| `allow_unauthenticated`   | `true`        | Allow public unauthenticated invocations    |
+| `allow_unauthenticated`   | `true`        | If true, grants the current gcloud user `run.invoker` (public `allUsers` is blocked by most org policies) |
+| `invoker_members`         | `[]`          | Explicit IAM members to grant `run.invoker`. Defaults to the current gcloud user. Use `["allUsers"]` for public access (if your org policy allows it). |
+| `enable_iap`              | `false`       | If true, creates a global HTTPS Load Balancer with IAP in front of Cloud Run. See [Optional: IAP](#optional-iap-in-front-of-cloud-run). |
+| `iap_lb_scheme`           | `EXTERNAL`    | LB scheme for IAP. Use `EXTERNAL` (classic) or `EXTERNAL_MANAGED` (newer). Must be allowed by your org policy. |
+| `iap_allowed_users`       | `[]`          | IAM members allowed through IAP. Defaults to the current gcloud user. |
+| `domain`                  | `null`        | Optional custom domain for the IAP Load Balancer frontend. |
 
 ### Outputs
 
@@ -313,13 +358,134 @@ After `terraform apply`, the following are printed:
 
 | Output                    | Description                                |
 |---------------------------|--------------------------------------------|
-| `cloud_run_service_url`  | Public HTTPS URL of the deployed service   |
+| `cloud_run_service_url`  | Direct HTTPS URL of the Cloud Run service (requires auth token — not browser-accessible) |
+| `cloud_run_service_name` | Name of the Cloud Run service (`sudoku`)   |
 | `artifact_registry_image`| Full image path Cloud Run pulls from       |
-| `cloud_run_service_name` | Name of the Cloud Run service              |
+| `cloud_run_proxy_command`| The `gcloud run services proxy` command to start a local authenticated proxy |
+| `load_balancer_ip`       | Global static IP of the IAP LB. `null` when IAP is disabled. |
+| `iap_protected_url`      | HTTPS URL protected by IAP. `null` when IAP is disabled. |
+
+### Accessing the app
+
+The Cloud Run service requires authentication on every request. Your org policy likely blocks `allUsers` and `allAuthenticatedUsers`, so the service is **not directly accessible in a browser**. Use one of the methods below.
+
+#### Method 1: Local proxy (default, no extra infra)
+
+`gcloud run services proxy` starts a local server that injects your OAuth identity token into every request:
+
+```bash
+gcloud run services proxy sudoku \
+  --region=us-central1 \
+  --project=your-gcp-project \
+  --port=8080
+```
+
+Then open [http://localhost:8080](http://localhost:8080) in your browser. Keep the terminal open while you play. Stop with `Ctrl+C`.
+
+> [!TIP]
+> If the proxy command is missing, install the component: `sudo apt-get install -y google-cloud-cli-cloud-run-proxy`
+
+#### Method 2: Optional — IAP in front of Cloud Run
+
+For a permanent, browser-friendly URL with a Google login flow, enable Identity-Aware Proxy (IAP). This creates a global HTTPS Load Balancer with IAP in front of Cloud Run.
+
+```bash
+terraform apply \
+  -var="project_id=your-gcp-project" \
+  -var="enable_iap=true" \
+  -var="iap_lb_scheme=EXTERNAL"          # or EXTERNAL_MANAGED
+```
+
+> [!WARNING]
+> IAP requires an external HTTP/HTTPS Application Load Balancer. If your org policy (`compute.restrictLoadBalancerCreationForTypes`) blocks `EXTERNAL_HTTP_HTTPS` and `EXTERNAL_MANAGED_HTTP_HTTPS`, IAP creation will fail. Check with:
+> ```bash
+> gcloud org-policies describe compute.restrictLoadBalancerCreationForTypes \
+>   --project=your-gcp-project --effective
+> ```
+> If blocked, request an org policy exception or use the local proxy (Method 1).
+
+### Finding deployment status
+
+After deploying, use these commands to check the state of your infrastructure:
+
+#### Cloud Run service status
+
+```bash
+# Service URL, region, and condition (Ready/Failed)
+gcloud run services describe sudoku \
+  --region=us-central1 \
+  --project=your-gcp-project \
+  --format='value(status.url, status.conditions[0].type, status.conditions[0].state)'
+
+# List all revisions (deploy history)
+gcloud run revisions list \
+  --service=sudoku \
+  --region=us-central1 \
+  --project=your-gcp-project
+
+# Current traffic split
+gcloud run services describe sudoku \
+  --region=us-central1 \
+  --project=your-gcp-project \
+  --format='value(status.traffic)'
+```
+
+#### IAM policy (who can invoke)
+
+```bash
+gcloud run services get-iam-policy sudoku \
+  --region=us-central1 \
+  --project=your-gcp-project \
+  --format='table(bindings.role, bindings.members)'
+```
+
+#### Container image in Artifact Registry
+
+```bash
+gcloud artifacts docker images list \
+  us-central1-docker.pkg.dev/your-gcp-project/sudoku-repo \
+  --format='table(name, version, update_time)'
+```
+
+#### Recent logs
+
+```bash
+# Last 50 log lines from the Cloud Run service
+gcloud logging read \
+  "resource.type=cloud_run_revision AND resource.labels.service_name=sudoku" \
+  --limit=50 \
+  --format='value(timestamp, textPayload)'
+
+# Tail logs in real-time
+gcloud logging tail \
+  "resource.type=cloud_run_revision AND resource.labels.service_name=sudoku"
+```
+
+#### Terraform state
+
+```bash
+cd terraform
+
+# List all resources tracked by Terraform
+terraform state list
+
+# Show the current plan (what would change if you ran apply)
+terraform plan -var="project_id=your-gcp-project"
+
+# Show all output values
+terraform output
+```
+
+#### Full deployment health check (one-liner)
+
+```bash
+gcloud run services describe sudoku --region=us-central1 --project=your-gcp-project \
+  --format='value(status.url, status.conditions[0].type, status.conditions[0].state, status.conditions[0].message)'
+```
 
 ### Teardown
 
-To remove everything Terraform created (service, repo, IAM binding):
+To remove everything Terraform created (service, repo, IAM binding, and optionally the IAP LB):
 
 ```bash
 cd terraform
