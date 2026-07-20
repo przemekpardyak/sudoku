@@ -23,10 +23,9 @@ resource "google_cloud_run_v2_service" "app" {
           "cpu"    = var.cpu
         }
       }
-      env {
-        name  = "PORT"
-        value = "8080"
-      }
+      # NOTE: Do not set PORT here — Cloud Run v2 sets it automatically as a reserved variable.
+      # The container must listen on $PORT (gunicorn in the Dockerfile binds to 0.0.0.0:8080
+      # by default; Cloud Run matches PORT=8080 to the EXPOSE directive).
     }
 
     scaling {
@@ -51,15 +50,25 @@ resource "google_cloud_run_v2_service" "app" {
 }
 
 /**
- * IAM binding: allow unauthenticated invocation so the web app is public.
- * Toggle with var.allow_unauthenticated.
+ * IAM binding: grant the run.invoker role to the configured members.
+ *
+ * Defaults to the currently authenticated gcloud user, since this project's
+ * organization policy blocks the `allUsers` public member. To make the service
+ * fully public (if allowed by your org policy), set:
+ *   allow_unauthenticated = true  +  invoker_members = ["allUsers"]
  */
-resource "google_cloud_run_v2_service_iam_binding" "public_invoker" {
-  count    = var.allow_unauthenticated ? 1 : 0
+data "google_client_config" "current" {}
+
+data "google_client_openid_userinfo" "me" {}
+
+data "google_project" "number" {
+  project_id = var.project_id
+}
+
+resource "google_cloud_run_v2_service_iam_binding" "invoker" {
+  count    = var.allow_unauthenticated || length(var.invoker_members) > 0 ? 1 : 0
   location = google_cloud_run_v2_service.app.location
   name     = google_cloud_run_v2_service.app.name
   role     = "roles/run.invoker"
-  members = [
-    "allUsers",
-  ]
+  members  = length(var.invoker_members) > 0 ? var.invoker_members : ["user:${data.google_client_openid_userinfo.me.email}"]
 }

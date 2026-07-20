@@ -62,7 +62,37 @@ variable "cpu" {
 }
 
 variable "allow_unauthenticated" {
-  description = "If true, Cloud Run allows public unauthenticated invocations. Required for a public web app."
+  description = "If true and invoker_members is empty, grants the run.invoker role to the currently authenticated gcloud user. Set invoker_members=[\"allUsers\"] for fully public access (requires org policy to allow it)."
   type        = bool
   default     = true
+}
+
+variable "invoker_members" {
+  description = "IAM members to grant roles/run.invoker on the Cloud Run service. Defaults to the currently authenticated gcloud user when empty. Use [\"allUsers\"] for public access (if your org policy allows it)."
+  type        = list(string)
+  default     = []
+}
+
+variable "domain" {
+  description = "Optional custom domain for the Load Balancer frontend (e.g. sudoku.example.com). If null, the LB IP must be accessed directly via the generated https://IP.nip.io-style address."
+  type        = string
+  default     = null
+}
+
+variable "iap_allowed_users" {
+  description = "IAM members allowed through Identity-Aware Proxy. Defaults to the currently authenticated gcloud user when empty."
+  type        = list(string)
+  default     = []
+}
+
+variable "enable_iap" {
+  description = "If true, creates a global HTTPS Load Balancer with Identity-Aware Proxy in front of Cloud Run. Requires the org policy to allow EXTERNAL_HTTP_HTTPS or EXTERNAL_MANAGED_HTTP_HTTPS load balancers. Defaults to false — use `gcloud run services proxy` for local browser access."
+  type        = bool
+  default     = false
+}
+
+variable "iap_lb_scheme" {
+  description = "Load balancing scheme for the IAP frontend. Use \"EXTERNAL\" for the classic external Application LB or \"EXTERNAL_MANAGED\" for the newer Application LB. Must be allowed by your org policy."
+  type        = string
+  default     = "EXTERNAL"
 }

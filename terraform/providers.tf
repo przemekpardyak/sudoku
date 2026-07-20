@@ -25,6 +25,13 @@ resource "google_project_service" "enabled_apis" {
     "run.googleapis.com",
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
+    "iap.googleapis.com",
+    "compute.googleapis.com",
+    "certificatemanager.googleapis.com",
+    "networkservices.googleapis.com",
+    "networksecurity.googleapis.com",
+    "servicecontrol.googleapis.com",
+    "servicemanagement.googleapis.com",
   ])
 
   service            = each.value

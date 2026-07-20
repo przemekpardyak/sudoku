@@ -1,0 +1,19 @@
+# Files ignored by `gcloud builds submit` / `gcloud app deploy`.
+# Mirrors .dockerignore to keep the uploaded source tarball small.
+venv/
+__pycache__/
+*.pyc
+.git/
+.gitignore
+.gitkeep
+terraform/
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+README.html
+README.md
+.DS_Store
+deploy.sh
+.dockerignore
+.gcloudignore
