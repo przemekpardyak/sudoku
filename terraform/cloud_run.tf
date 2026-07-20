@@ -45,6 +45,7 @@ resource "google_cloud_run_v2_service" "app" {
 
   depends_on = [
     google_project_service.enabled_apis,
+    google_project_service.iap_apis,
     google_artifact_registry_repository.app_repo,
   ]
 }

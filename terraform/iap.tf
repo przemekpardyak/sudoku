@@ -28,7 +28,7 @@ resource "google_iap_brand" "app" {
   support_email     = data.google_client_openid_userinfo.me.email
   application_title = "Sudoku"
 
-  depends_on = [google_project_service.enabled_apis]
+  depends_on = [google_project_service.iap_apis]
 }
 
 # IAP OAuth client (uses the brand above).
@@ -49,7 +49,7 @@ resource "google_compute_region_network_endpoint_group" "cloudrun_neg" {
     service = google_cloud_run_v2_service.app.name
   }
 
-  depends_on = [google_project_service.enabled_apis]
+  depends_on = [google_project_service.iap_apis]
 }
 
 # --- Backend service with IAP enabled ---------------------------------------
@@ -71,7 +71,7 @@ resource "google_compute_backend_service" "iap_backend" {
     oauth2_client_secret = google_iap_client.app[0].secret
   }
 
-  depends_on = [google_project_service.enabled_apis]
+  depends_on = [google_project_service.iap_apis]
 }
 
 # --- URL map + HTTPS proxy + frontend rule ----------------------------------
@@ -139,5 +139,5 @@ resource "google_cloud_run_v2_service_iam_member" "iap_invoker" {
   role     = "roles/run.invoker"
   member   = "serviceAccount:${data.google_project.number.number}-compute@developer.gserviceaccount.com"
 
-  depends_on = [google_project_service.enabled_apis]
+  depends_on = [google_project_service.iap_apis]
 }

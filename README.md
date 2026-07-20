@@ -195,7 +195,7 @@ flowchart LR
         IAM["IAM: roles/run.invoker<br/>→ user:you@example.com"]
     end
 
-    Dev -->|"deploy.sh"| CB
+    Dev -->|"scripts/deploy.sh"| CB
     CB -->|"push image"| AR
     AR -->|"pull image"| CR
     Dev -->|"local proxy (default)"| Proxy -->|"auth token"| CR
@@ -211,7 +211,8 @@ flowchart LR
 
 | Resource | Terraform file | Purpose |
 |----------|----------------|---------|
-| Enabled APIs | [providers.tf](terraform/providers.tf) | Cloud Run, Artifact Registry, Cloud Build, Compute, IAP, and others |
+| Core APIs (5) | [providers.tf](terraform/providers.tf) | Cloud Run, Artifact Registry, Cloud Build, Compute Engine, IAM Credentials |
+| *(optional)* IAP APIs (6) | [providers.tf](terraform/providers.tf) | IAP, Certificate Manager, Network Services/Security — only enabled when `enable_iap=true` |
 | Artifact Registry repo (`sudoku-repo`) | [artifact_registry.tf](terraform/artifact_registry.tf) | Stores the Docker image |
 | Cloud Run service (`sudoku`) | [cloud_run.tf](terraform/cloud_run.tf) | Serves the Flask app via gunicorn on port 8080 |
 | `roles/run.invoker` IAM binding | [cloud_run.tf](terraform/cloud_run.tf) | Grants the authenticated user permission to invoke the service |
@@ -259,17 +260,18 @@ terraform version
 
 ### Deploy — Option A: One-command (recommended)
 
-The included [deploy.sh](deploy.sh) script orchestrates the full deploy in three phases:
+The included [deploy.sh](scripts/deploy.sh) script orchestrates the full deploy in four phases:
 
 | Phase | What happens |
 |-------|--------------|
+| 0. Service account | Checks if the default Compute Engine SA exists. If not (e.g. deleted during cleanup), creates a dedicated `{app_name}-sa` SA with Cloud Build + Artifact Registry roles and a logs bucket. |
 | 1. Bootstrap | `terraform apply` (targeted) enables APIs and creates the Artifact Registry repo |
 | 2. Build | `gcloud builds submit` builds the Docker image in Cloud Build and pushes it to Artifact Registry |
 | 3. Deploy | `terraform apply` (full) creates the Cloud Run service + IAM, then `gcloud run deploy` rolls out a new revision |
 
 ```bash
 cd /usr/local/google/home/ppardyak/Dogfood/sudoku
-PROJECT_ID=your-gcp-project ./deploy.sh
+PROJECT_ID=your-gcp-project ./scripts/deploy.sh
 ```
 
 Optional environment variables:
@@ -293,10 +295,10 @@ The deploy script supports deploying to multiple GCP projects simultaneously. Ea
 
 ```bash
 # Deploy to project A (in one terminal)
-PROJECT_ID=project-a TF_ARGS="-auto-approve" ./deploy.sh &
+PROJECT_ID=project-a TF_ARGS="-auto-approve" ./scripts/deploy.sh &
 
 # Deploy to project B (in another terminal, simultaneously)
-PROJECT_ID=project-b TF_ARGS="-auto-approve" ./deploy.sh &
+PROJECT_ID=project-b TF_ARGS="-auto-approve" ./scripts/deploy.sh &
 wait
 ```
 
@@ -313,34 +315,67 @@ Each deployment is fully isolated:
 
 ```bash
 # 1. Set your project
-gcloud config set project your-gcp-project
-gcloud config set compute/region us-central1
+PROJECT_ID=your-gcp-project
+REGION=us-central1
+IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/sudoku-repo/sudoku:latest"
 
 # 2. Apply Terraform — Phase 1: APIs + Artifact Registry repo
 cd terraform
 terraform init
 terraform apply \
-  -var="project_id=your-gcp-project" \
+  -var="project_id=${PROJECT_ID}" \
   -target=google_project_service.enabled_apis \
   -target=google_artifact_registry_repository.app_repo
 
-# 3. Build & push the image via Cloud Build (no local Docker needed)
-IMAGE="us-central1-docker.pkg.dev/your-gcp-project/sudoku-repo/sudoku:latest"
-gcloud builds submit .. --tag="$IMAGE"
+# 3. Ensure a service account exists for Cloud Build + Cloud Run
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+DEFAULT_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+if gcloud iam service-accounts describe "$DEFAULT_SA" --project="$PROJECT_ID" >/dev/null 2>&1; then
+  RUN_SA="$DEFAULT_SA"
+  CB_FLAGS=""
+else
+  # Default SA deleted — create a dedicated one
+  SA_EMAIL="sudoku-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+  gcloud iam service-accounts create sudoku-sa \
+    --display-name="Sudoku Cloud Build + Cloud Run SA" \
+    --project="$PROJECT_ID"
+  for role in roles/cloudbuild.builds.builder roles/artifactregistry.writer roles/storage.objectAdmin; do
+    gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+      --member="serviceAccount:$SA_EMAIL" --role="$role" --quiet
+  done
+  gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
+    --member="user:$(gcloud auth list --filter=status:ACTIVE --format='value(account)')" \
+    --role="roles/iam.serviceAccountUser" --project="$PROJECT_ID" --quiet
+  # Create logs bucket (required when using a custom SA with Cloud Build)
+  gcloud storage buckets create "gs://${PROJECT_NUMBER}-cloudbuild-logs" \
+    --project="$PROJECT_ID" --location="$REGION" --quiet
+  gcloud storage buckets add-iam-policy-binding "gs://${PROJECT_NUMBER}-cloudbuild-logs" \
+    --member="serviceAccount:$SA_EMAIL" --role="roles/storage.objectAdmin" --quiet
+  CB_FLAGS="--service-account=projects/${PROJECT_ID}/serviceAccounts/${SA_EMAIL} --gcs-log-dir=gs://${PROJECT_NUMBER}-cloudbuild-logs"
+  RUN_SA="$SA_EMAIL"
+fi
 
-# 4. Apply Terraform — Phase 2: Cloud Run service + IAM
-terraform apply -var="project_id=your-gcp-project"
+# 4. Build & push the image via Cloud Build (no local Docker needed)
+gcloud builds submit .. --tag="$IMAGE" --project="$PROJECT_ID" $CB_FLAGS --quiet
 
-# 5. Deploy a fresh revision pointing at the pushed image
+# 5. Apply Terraform — Phase 2: Cloud Run service + IAM
+terraform apply \
+  -var="project_id=${PROJECT_ID}" \
+  -var="service_account_email=${RUN_SA}"
+
+# 6. Deploy a fresh revision pointing at the pushed image
 gcloud run deploy sudoku \
   --image="$IMAGE" \
-  --region=us-central1 \
+  --region="$REGION" \
+  --project="$PROJECT_ID" \
   --port=8080 \
+  --no-allow-unauthenticated \
+  --service-account="$RUN_SA" \
   --memory=512Mi --cpu=1 \
   --concurrency=80 --min-instances=0 --max-instances=10
 
-# 6. Get the URL
-gcloud run services describe sudoku --region=us-central1 --format='value(status.url)'
+# 7. Get the URL
+gcloud run services describe sudoku --region="$REGION" --project="$PROJECT_ID" --format='value(status.url)'
 ```
 
 ### Configuration variables
@@ -361,13 +396,13 @@ terraform apply \
 | `region`                  | `us-central1` | GCP region for all resources                 |
 | `app_name`                | `sudoku`      | Logical name prefix for resources            |
 | `image_tag`               | `latest`      | Container image tag to deploy               |
-| `service_account_email`   | `null`        | Custom SA for the Cloud Run revision         |
+| `service_account_email`   | `null`        | SA for the Cloud Run revision. If `null`, uses the default Compute Engine SA. Set this if the default SA was deleted — `deploy.sh` handles this automatically. |
 | `concurrency`             | `80`          | Max concurrent requests per instance         |
 | `max_instance_count`      | `10`          | Max container instances                      |
 | `min_instance_count`      | `0`           | Min instances (0 = scale to zero)            |
 | `memory`                  | `512Mi`       | Memory limit per instance                    |
 | `cpu`                     | `1`           | CPU limit per instance                       |
-| `allow_unauthenticated`   | `true`        | If true, grants the current gcloud user `run.invoker` (public `allUsers` is blocked by most org policies) |
+| `allow_unauthenticated`   | `true`        | If true (and `invoker_members` is empty), grants the current gcloud user `roles/run.invoker` instead of `allUsers`. The deploy script uses `--no-allow-unauthenticated` since org policies typically block public access. |
 | `invoker_members`         | `[]`          | Explicit IAM members to grant `run.invoker`. Defaults to the current gcloud user. Use `["allUsers"]` for public access (if your org policy allows it). |
 | `enable_iap`              | `false`       | If true, creates a global HTTPS Load Balancer with IAP in front of Cloud Run. See [Optional: IAP](#optional-iap-in-front-of-cloud-run). |
 | `iap_lb_scheme`           | `EXTERNAL`    | LB scheme for IAP. Use `EXTERNAL` (classic) or `EXTERNAL_MANAGED` (newer). Must be allowed by your org policy. |
@@ -507,11 +542,32 @@ gcloud run services describe sudoku --region=us-central1 --project=your-gcp-proj
 
 ### Teardown
 
-To remove everything Terraform created (service, repo, IAM binding, and optionally the IAP LB):
+To remove everything the deploy created (Cloud Run service, IAM, Artifact Registry repo, Cloud Build buckets, dedicated service account, TF state file):
+
+#### Option A: One-command (recommended)
+
+```bash
+PROJECT_ID=your-gcp-project ./scripts/cleanup.sh
+```
+
+The [cleanup.sh](scripts/cleanup.sh) script:
+
+1. Runs `terraform destroy` to remove Cloud Run, IAM bindings, Artifact Registry, and disable APIs
+2. Deletes the Cloud Build logs bucket and source bucket
+3. Deletes the dedicated `sudoku-sa` service account (if created by `deploy.sh`)
+4. Removes the per-project Terraform state file
+5. Leaves the default Compute Engine SA untouched (auto-created by GCP)
+
+> [!TIP]
+> The script asks for confirmation before deleting anything. It's safe to run even if some resources are already gone — it skips what doesn't exist.
+
+#### Option B: Manual
 
 ```bash
 cd terraform
-terraform destroy -var="project_id=your-gcp-project"
+terraform destroy \
+  -state="terraform.tfstate.your-gcp-project" \
+  -var="project_id=your-gcp-project"
 ```
 
 > [!NOTE]
@@ -574,6 +630,53 @@ This guarantees every generated puzzle has a valid unique solution.
 
 ---
 
+## 🔍 Auditing
+
+Both `deploy.sh` and `cleanup.sh` automatically run an audit **before and after** the operation, validating that the project state matches expectations.
+
+### How it works
+
+| When | Source label | Expected state |
+|------|-------------|----------------|
+| Before deploy | `setup-pre` | Clean (0 Cloud Run, 0 AR repos, 0 buckets) |
+| After deploy | `setup-post` | Deployed (1 Cloud Run, 1 AR repo, ≥1 bucket) |
+| Before cleanup | `cleanup-pre` | Deployed (1 Cloud Run, 1 AR repo, ≥1 bucket) |
+| After cleanup | `cleanup-post` | Clean (0 Cloud Run, 0 AR repos, 0 buckets) |
+
+### Audit reports
+
+Reports are saved to `audits/` with timestamped filenames:
+
+```
+audits/audit_ppardyak-cad_setup-pre_20260720_220000.md
+audits/audit_ppardyak-cad_setup-post_20260720_220200.md
+audits/audit_ppardyak-cad_cleanup-pre_20260720_220400.md
+audits/audit_ppardyak-cad_cleanup-post_20260720_220600.md
+```
+
+> [!NOTE]
+> Audit reports are gitignored (`audits/*.md`) since they're generated artifacts.
+
+### Manual audit
+
+To run an audit independently:
+
+```bash
+./scripts/run_audit.sh my-gcp-project manual        # No state validation
+./scripts/run_audit.sh my-gcp-project setup-pre true # Expect deployed state
+./scripts/run_audit.sh my-gcp-project setup-pre false # Expect clean state
+```
+
+### Skipping audits
+
+Set `SKIP_AUDITS=true` to skip the pre/post audits:
+
+```bash
+SKIP_AUDITS=true PROJECT_ID=your-gcp-project ./scripts/deploy.sh
+```
+
+---
+
 ## 🛠️ Troubleshooting
 
 <details>
@@ -633,6 +736,57 @@ If you're behind a package install restriction (e.g., Corp Airlock), either:
 - Use a pre-approved virtual environment image, or
 - Request an exception at your organization's package governance portal.
 - Alternatively, bootstrap pip via `get-pip.py` inside a `--without-pip` venv (see [Getting Started](#alternative-virtualenv-without-ensurepip-corporate-environments)).
+
+</details>
+
+<details>
+<summary><b>Permission 'iam.serviceAccounts.get' denied (Cloud Build)</b></summary>
+
+This error occurs when the default Compute Engine service account (`{project_number}-compute@developer.gserviceaccount.com`) has been deleted. Cloud Build tries to use it by default but can't access it.
+
+**Fix:** The `deploy.sh` script handles this automatically by creating a dedicated `sudoku-sa` service account. If deploying manually, see [Option B: Manual step-by-step](#deploy--option-b-manual-step-by-step) for the SA creation steps.
+
+</details>
+
+<details>
+<summary><b>Permission 'iam.serviceAccounts.actAs' denied (Cloud Run)</b></summary>
+
+Cloud Run needs to impersonate a service account to run the container. If the default SA was deleted, Cloud Run can't use it.
+
+**Fix:** Deploy with an explicit `--service-account` flag:
+
+```bash
+gcloud run deploy sudoku \
+  --image="$IMAGE" \
+  --region=us-central1 \
+  --project=your-gcp-project \
+  --service-account="sudoku-sa@your-gcp-project.iam.gserviceaccount.com"
+```
+
+Also grant yourself `roles/iam.serviceAccountUser` on that SA:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  sudoku-sa@your-gcp-project.iam.gserviceaccount.com \
+  --member="user:you@example.com" \
+  --role="roles/iam.serviceAccountUser"
+```
+
+</details>
+
+<details>
+<summary><b>Cloud Build fails with "if 'build.service_account' is specified, the build must specify 'build.logs_bucket'"</b></summary>
+
+When using a custom service account with Cloud Build, you must also specify a logs bucket (or use `CLOUD_LOGGING_ONLY`). The `deploy.sh` script handles this automatically by creating a `{project_number}-cloudbuild-logs` bucket.
+
+If deploying manually:
+
+```bash
+gcloud builds submit . --tag="$IMAGE" \
+  --project="$PROJECT_ID" \
+  --service-account="projects/$PROJECT_ID/serviceAccounts/$SA_EMAIL" \
+  --gcs-log-dir="gs://${PROJECT_NUMBER}-cloudbuild-logs"
+```
 
 </details>
 

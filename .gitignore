@@ -36,3 +36,6 @@ terraform/*.tfvars
 # OS
 .DS_Store
 Thumbs.db
+
+# Audit reports (generated, not tracked)
+audits/*.md
