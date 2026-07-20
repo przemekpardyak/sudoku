@@ -287,6 +287,28 @@ On success, the script prints the Cloud Run service URL and the image path.
 > [!NOTE]
 > The deploy script uses **Cloud Build** (not local Docker) to build the image, so you don't need Docker installed or the `docker` group permission.
 
+### Deploying to multiple projects in parallel
+
+The deploy script supports deploying to multiple GCP projects simultaneously. Each project gets its own Terraform state file (`terraform/terraform.tfstate.<project-id>`), so parallel runs don't clobber each other. The script also avoids mutating global `gcloud config` — all `gcloud` commands use explicit `--project` and `--region` flags.
+
+```bash
+# Deploy to project A (in one terminal)
+PROJECT_ID=project-a TF_ARGS="-auto-approve" ./deploy.sh &
+
+# Deploy to project B (in another terminal, simultaneously)
+PROJECT_ID=project-b TF_ARGS="-auto-approve" ./deploy.sh &
+wait
+```
+
+Each deployment is fully isolated:
+- **State**: `terraform/terraform.tfstate.<project-id>` — separate state per project
+- **Resources**: Artifact Registry repo + Cloud Run service in each project
+- **Image**: `us-central1-docker.pkg.dev/<project-id>/sudoku-repo/sudoku:latest` per project
+- **Auth**: Uses `gcloud auth application-default` credentials (same user, different projects)
+
+> [!TIP]
+> The first deploy to any project must run `terraform init` (the script does this automatically). Subsequent deploys skip init to avoid races.
+
 ### Deploy — Option B: Manual step-by-step
 
 ```bash

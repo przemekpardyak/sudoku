@@ -41,8 +41,13 @@ if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
   gcloud auth application-default login
 fi
 
-gcloud config set project "${PROJECT_ID}"
-gcloud config set compute/region "${REGION}"
+# NOTE: We intentionally do NOT call `gcloud config set project` here because it
+# mutates the global gcloud config and would break parallel deploys to different
+# projects. All gcloud commands below use explicit --project and --region flags.
+
+# Per-project state file so parallel deploys to different projects don't clobber
+# each other's Terraform state.
+TF_STATE_FILE="terraform.tfstate.${PROJECT_ID}"
 
 # --- Phase 1: Bootstrap infrastructure (Artifact Registry repo + APIs) ---------
 # We create the supporting infra first WITHOUT the Cloud Run service, because
@@ -50,8 +55,12 @@ gcloud config set compute/region "${REGION}"
 # time. The image won't exist until Phase 2 builds and pushes it.
 echo
 echo "▶ Phase 1: Bootstrapping infrastructure (Artifact Registry + APIs)..."
-terraform -chdir="${TF_DIR}" init -upgrade
+# Only run init if .terraform/ is missing (avoids races in parallel deploys).
+if [ ! -d "${TF_DIR}/.terraform" ]; then
+  terraform -chdir="${TF_DIR}" init -upgrade
+fi
 terraform -chdir="${TF_DIR}" apply \
+  -state="${TF_STATE_FILE}" \
   -var="project_id=${PROJECT_ID}" \
   -var="region=${REGION}" \
   -var="app_name=${APP_NAME}" \
@@ -75,6 +84,7 @@ gcloud builds submit "${SCRIPT_DIR}" \
 echo
 echo "▶ Phase 3: Applying remaining Terraform (Cloud Run service + IAM)..."
 terraform -chdir="${TF_DIR}" apply \
+  -state="${TF_STATE_FILE}" \
   -var="project_id=${PROJECT_ID}" \
   -var="region=${REGION}" \
   -var="app_name=${APP_NAME}" \
