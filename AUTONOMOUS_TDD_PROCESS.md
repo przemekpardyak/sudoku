@@ -28,15 +28,18 @@ graph TD
     B -->|No| I[Wait or extrapolate]
     C --> D[Write failing test]
     D --> E[Run test — should fail]
-    E --> F[Implement/fix code]
+    E --> R[Resolve ambiguity — document design decisions]
+    R -->|Resolved| F[Implement/fix code]
+    R -->|Escalated| M[Notify user, move on]
+    M --> A
     F --> G[Run test — should pass]
     G --> H{All tests pass?}
     H -->|No| F
     H -->|Yes| J[Update README/docs]
     J --> K[Commit to git]
     K --> L[Redeploy to GCP]
-    L --> M[Update REQUIREMENTS.md with status]
-    M --> A
+    L --> N[Update REQUIREMENTS.md with status]
+    N --> A
     I --> A
 ```
 
@@ -55,19 +58,40 @@ graph TD
   - **E2E tests** (`tests/test_e2e_sudoku.py`) for UI/UX features
 - Run the test to confirm it **fails** (proves the test is valid)
 
-### 3. Implement / Fix
+### 3. Resolve Ambiguity
+
+When a requirement has ambiguity or requires design choices:
+
+1. **Resolve it** — make the most reasonable choice based on context and existing patterns
+2. **Document it** — add an explicit **Design Decisions** section under the requirement in `REQUIREMENTS.md`:
+   ```markdown
+   - Add timer pause feature
+     - 🚧 In progress
+     - **Design Decisions:**
+       - Pause button placed next to timer (not in a menu) — matches existing UI pattern
+       - Timer stops counting but display stays visible (greys out) — user can see paused state
+       - Space key also pauses (in addition to button) — matches keyboard shortcut pattern
+       - Used `performance.now()` instead of `setInterval` for accuracy — solves drift issue
+   ```
+3. **Escalate** — if the ambiguity is too high or the choice is too fundamental to make
+   without user input:
+   - Document the question and options in `REQUIREMENTS.md` under the requirement
+   - Notify the user in chat
+   - Move on to the next requirement (don't block the loop)
+
+### 4. Implement / Fix
 
 - Make the minimum change needed to pass the test
 - Follow existing code patterns and conventions
 - Preserve existing comments and docstrings
 
-### 4. Verify No Regressions
+### 5. Verify No Regressions
 
 - Run the full test suite: `PYTHONUNBUFFERED=1 venv/bin/python3 run_all_tests.py --all`
 - All previously-passing tests must still pass
 - If a regression is found, fix it before proceeding
 
-### 5. Update Documentation
+### 6. Update Documentation
 
 - Update `README.md` if the change affects:
   - Feature list
@@ -77,14 +101,14 @@ graph TD
 - Update `DEV_LOG.md` or `E2E_TDD_LOG.md` with a phase summary
 - Update `REQUIREMENTS.md` with a comment under the requirement
 
-### 6. Commit to Git
+### 7. Commit to Git
 
 - `git add -A && git commit -m "descriptive message"`
 - Commit after each meaningful task (not every file change)
 - **Do NOT push** — pushing is behind a password
 - Notify the user: "Committed: [hash] — [message]"
 
-### 7. Deploy to GCP
+### 8. Deploy to GCP
 
 - Redeploy regularly so the user can test manually
 - Deploy command: `PROJECT_ID=ppardyak-cad ./scripts/deploy.sh`
@@ -95,7 +119,7 @@ graph TD
   - Test count
 - If deploy fails, iterate on the fix
 
-### 8. Update Requirements File
+### 9. Update Requirements File
 
 - Mark the requirement as ✅ Done, ❌ Failed, or 🚧 In progress
 - Add a comment summarizing what was done
@@ -103,7 +127,7 @@ graph TD
 - Note any remaining gaps or issues
 - Move completed items to the "Completed" section
 
-### 9. Loop
+### 10. Loop
 
 - Return to step 1 and pick the next requirement
 - If no requirements remain:
