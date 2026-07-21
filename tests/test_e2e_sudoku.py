@@ -646,9 +646,10 @@ class TestHintButton(TestSudokuE2E):
         """Hint button should show a preview of a correct cell."""
         self.page.goto(APP_URL)
         self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
 
-        # Press and hold hint button (mousedown)
-        self.page.dispatch_event("#hintBtn", "mousedown")
+        # Click hint button to toggle on
+        self.page.click("#hintBtn")
         self.page.wait_for_timeout(500)
 
         # Check if any cell has hint-preview class
@@ -656,17 +657,18 @@ class TestHintButton(TestSudokuE2E):
         # Hint should show a preview on an empty cell
         self.assertGreater(len(previews), 0, "Hint should show a preview cell")
 
-        # Release
-        self.page.dispatch_event("#hintBtn", "mouseleave")
+        # Click again to toggle off
+        self.page.click("#hintBtn")
         self.page.wait_for_timeout(300)
 
     def test_hint_commits_on_click(self):
         """Clicking the hint preview cell should commit the hint."""
         self.page.goto(APP_URL)
         self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
 
         # Show hint preview
-        self.page.dispatch_event("#hintBtn", "mousedown")
+        self.page.click("#hintBtn")
         self.page.wait_for_timeout(500)
 
         # Find the preview cell
@@ -1879,6 +1881,104 @@ class TestAutoNotesToggle(TestSudokuE2E):
         )
         self.assertGreater(notes_remaining, 0,
                           "User-entered notes should be preserved when auto-notes is off")
+
+
+
+
+class TestHintButtonToggle(TestSudokuE2E):
+    """Tests that hint button toggles on/off instead of hold-to-preview."""
+
+    def test_hint_button_gets_active_class_when_clicked(self):
+        """Hint button should get active class when clicked (depressed look)."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        btn = self.page.query_selector("#hintBtn")
+        self.assertFalse("active" in (btn.get_attribute("class") or ""),
+                        "Hint button should start without active class")
+
+        btn.click()
+        self.page.wait_for_timeout(500)
+        self.assertTrue("active" in (btn.get_attribute("class") or ""),
+                        "Hint button should have active class when toggled on")
+
+    def test_hint_button_loses_active_when_clicked_again(self):
+        """Hint button should lose active class when clicked again (toggle off)."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        btn = self.page.query_selector("#hintBtn")
+
+        # Turn on
+        btn.click()
+        self.page.wait_for_timeout(500)
+        self.assertTrue("active" in (btn.get_attribute("class") or ""))
+
+        # Turn off
+        btn.click()
+        self.page.wait_for_timeout(500)
+        self.assertFalse("active" in (btn.get_attribute("class") or ""),
+                         "Hint button should NOT have active class when toggled off")
+
+    def test_hint_stays_visible_after_mouse_leaves_button(self):
+        """Hint preview should NOT disappear when cursor leaves the hint button."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Click hint button
+        self.page.click("#hintBtn")
+        self.page.wait_for_timeout(500)
+
+        # Check hint-preview exists
+        hint_cells = self.page.eval_on_selector_all(
+            ".cell.hint-preview",
+            "els => els.length"
+        )
+        self.assertEqual(hint_cells, 1, "Should have exactly one hint-preview cell")
+
+        # Move mouse away from button
+        self.page.hover("#board")
+        self.page.wait_for_timeout(500)
+
+        # Hint should still be visible
+        hint_cells_after = self.page.eval_on_selector_all(
+            ".cell.hint-preview",
+            "els => els.length"
+        )
+        self.assertEqual(hint_cells_after, 1,
+                         "Hint should remain visible after mouse leaves button")
+
+    def test_hint_accepted_when_clicking_hinted_cell(self):
+        """Clicking the hinted cell should accept the hint and exit hint mode."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Click hint button
+        self.page.click("#hintBtn")
+        self.page.wait_for_timeout(500)
+
+        # Find the hint-preview cell and click it
+        hint_cell = self.page.query_selector(".cell.hint-preview")
+        self.assertIsNotNone(hint_cell, "Should have a hint-preview cell")
+        hint_cell.click()
+        self.page.wait_for_timeout(500)
+
+        # Hint should be applied — no more hint-preview
+        hint_remaining = self.page.eval_on_selector_all(
+            ".cell.hint-preview",
+            "els => els.length"
+        )
+        self.assertEqual(hint_remaining, 0,
+                         "Hint should be applied and removed after clicking cell")
+
+        # Hint button should lose active class
+        btn = self.page.query_selector("#hintBtn")
+        self.assertFalse("active" in (btn.get_attribute("class") or ""),
+                         "Hint button should lose active class after applying hint")
 
 
 if __name__ == "__main__":

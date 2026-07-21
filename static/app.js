@@ -460,6 +460,7 @@
     updateNumpad();
     updateProgress();
     hintCell = null;
+    hintBtn.classList.remove('active');
     hintsUsed = (hintsUsed || 0) + 1;
     flashHint(`Hint applied! (${hintsUsed} used)`);
     scheduleAutoSave();
@@ -472,6 +473,7 @@
     const cell = getCell(r, c);
     cell.classList.remove('hint-preview');
     hintCell = null;
+    hintBtn.classList.remove('active');
     renderCellContent(r, c, cell);
     applyHighlights();
     flashHint('');
@@ -1185,18 +1187,19 @@
   undoBtn.addEventListener('click', undo);
   redoBtn.addEventListener('click', redo);
 
-  // Hint: press to preview, click cell to apply
-  hintBtn.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    startHintPreview();
+
+  // Hint: click to toggle preview on/off
+  hintBtn.addEventListener('click', () => {
+    if (hintCell) {
+      cancelHintPreview();
+      hintBtn.classList.remove('active');
+    } else {
+      startHintPreview();
+      if (hintCell) {
+        hintBtn.classList.add('active');
+      }
+    }
   });
-  hintBtn.addEventListener('mouseleave', () => {
-    if (hintCell) cancelHintPreview();
-  });
-  hintBtn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    startHintPreview();
-  }, { passive: false });
 
   document.querySelectorAll('.diff-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
