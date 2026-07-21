@@ -75,7 +75,7 @@ fi
 # If the default SA is missing or inaccessible, we create a dedicated SA named
 # "{app_name}-sa" and grant it the roles needed for Cloud Build + Cloud Run.
 
-SA_EMAIL="${APP_NAME}-sa@${PROJECT_ID}.iam.gserviceaccount.com}"
+SA_EMAIL="${APP_NAME}-sa@${PROJECT_ID}.iam.gserviceaccount.com"
 TF_SA_VAR=""
 CB_SA_FLAG=""
 
@@ -133,6 +133,15 @@ else
   fi
   # Grant the SA access to the logs bucket.
   gcloud storage buckets add-iam-policy-binding "gs://${LOGS_BUCKET}" \
+    --member="serviceAccount:${SA_EMAIL}" \
+    --role="roles/storage.objectAdmin" \
+    --project="${PROJECT_ID}" --quiet >/dev/null 2>&1 || true
+
+  # Grant the SA access to the Cloud Build source bucket ({project_id}_cloudbuild).
+  # Cloud Build uploads source tarballs here, and the SA needs read access to
+  # download them during the build.
+  CB_SOURCE_BUCKET="${PROJECT_ID}_cloudbuild"
+  gcloud storage buckets add-iam-policy-binding "gs://${CB_SOURCE_BUCKET}" \
     --member="serviceAccount:${SA_EMAIL}" \
     --role="roles/storage.objectAdmin" \
     --project="${PROJECT_ID}" --quiet >/dev/null 2>&1 || true
@@ -262,6 +271,12 @@ echo "✅ Deployed successfully."
 echo "   Service URL: ${SERVICE_URL}"
 echo "   Image:       ${IMAGE}"
 echo "   Access:      gcloud run services proxy ${APP_NAME} --region=${REGION} --project=${PROJECT_ID} --port=8080"
+
+# Wait briefly for the newly deployed service to appear in list API calls.
+# gcloud run deploy returns as soon as the revision is ready, but the
+# services list API may lag by a few seconds, causing audit false-negatives.
+echo "  Waiting 10s for service to propagate..."
+sleep 10
 
 # --- Post-deploy audit -------------------------------------------------------
 if [ "${SKIP_AUDITS}" != "true" ]; then
