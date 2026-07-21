@@ -86,20 +86,30 @@
 
         <section class="actions">
           <button class="action-btn primary" id="newGameBtn">New Game</button>
-          <button class="action-btn" id="dailyBtn" title="Play today's daily puzzle">📅 Daily</button>
-          <button class="action-btn" id="pauseBtn" title="Pause/Resume timer (Space)">⏸ Pause</button>
-          <div class="undo-redo">
+          <div class="action-row">
+            <button class="action-btn" id="dailyBtn" title="Play today's daily puzzle">📅 Daily</button>
+            <button class="action-btn" id="pauseBtn" title="Pause/Resume timer (Space)">⏸ Pause</button>
+          </div>
+          <div class="action-row">
             <button class="action-btn" id="undoBtn" title="Undo (Ctrl+Z)">↶ Undo</button>
             <button class="action-btn" id="redoBtn" title="Redo (Ctrl+Y)">↷ Redo</button>
           </div>
-          <button class="action-btn" id="checkBtn">Check</button>
-          <button class="action-btn" id="autoNotesBtn" title="Fill pencil marks for all possible numbers">✏️ Auto-Notes</button>
-          <button class="action-btn" id="clearNotesBtn" title="Clear all pencil marks">📝 Clear Notes</button>
-          <button class="action-btn" id="resetBoardBtn" title="Reset board to original puzzle">🔄 Reset Board</button>
-          <button class="action-btn" id="solveBtn" title="Show the solution">✅ Solve</button>
-          <button class="action-btn hint-hold" id="hintBtn">Hint</button>
-          <button class="action-btn" id="loadGamesBtn">📂 Load Games</button>
-          <button class="action-btn" id="helpBtn" title="Keyboard shortcuts (?)">❓ Help</button>
+          <div class="action-row">
+            <button class="action-btn" id="checkBtn">Check</button>
+            <button class="action-btn hint-hold" id="hintBtn">Hint</button>
+          </div>
+          <div class="action-row">
+            <button class="action-btn" id="autoNotesBtn" title="Fill pencil marks for all possible numbers">✏️ Auto-Notes</button>
+            <button class="action-btn" id="clearNotesBtn" title="Clear all pencil marks">📝 Clear Notes</button>
+          </div>
+          <div class="action-row">
+            <button class="action-btn" id="resetBoardBtn" title="Reset board to original puzzle">🔄 Reset Board</button>
+            <button class="action-btn" id="solveBtn" title="Show the solution">✅ Solve</button>
+          </div>
+          <div class="action-row">
+            <button class="action-btn" id="loadGamesBtn">📂 Load Games</button>
+            <button class="action-btn" id="helpBtn" title="Keyboard shortcuts (?)">❓ Help</button>
+          </div>
         </section>
 
         <p class="hint-text" id="hintText"></p>

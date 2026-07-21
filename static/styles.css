@@ -455,14 +455,26 @@ body::before {
 .num-btn { position: relative; }
 
 .actions {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* New Game button spans full width */
+.actions .action-btn.primary {
+  grid-column: 1 / -1;
+}
+
+/* Each row of action buttons */
+.action-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
 
 .action-btn {
-  padding: 14px;
-  font-size: 14px;
+  padding: 12px 8px;
+  font-size: 13px;
 }
 
 .action-btn:hover {

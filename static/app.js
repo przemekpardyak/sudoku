@@ -1155,7 +1155,8 @@
       document.querySelectorAll('.diff-btn').forEach((b) => b.classList.remove('active'));
       btn.classList.add('active');
       difficulty = +btn.dataset.difficulty;
-      newGame();
+      updateDifficultyLabel();
+      flashHint(`Difficulty set to ${DIFF_NAMES[difficulty]}. Click "New Game" to start.`);
     });
   });
 

@@ -27,10 +27,11 @@
 <!-- Format: - [requirement text] -->
 <!--         - ✅ Done: [summary] or 🚧 In progress or ❌ Failed: [why] or ⏳ Pending -->
 
-- he buttons are too bunched up as a long colum on the right.  Reorganize and resize so that they are aligned with the board better.
+- The buttons are too bunched up as a long column on the right. Reorganize and resize so that they are aligned with the board better.
+  - ✅ Done: Reorganized 13 action buttons from single-column flex into grouped 2-column grids (`.action-row`). New Game spans full width. Reduces vertical height ~40%, aligns with board. 5 E2E tests added.
 
-- clicking on difficulty should not immediately create a new game.  only new game should do it.
-  
+- Clicking on difficulty should not immediately create a new game. Only new game should do it.
+  - ✅ Done: Difficulty buttons now only update selected difficulty + label, show hint message. New Game button uses selected difficulty. Updated old test, added 3 new E2E tests.
 
 ---
 

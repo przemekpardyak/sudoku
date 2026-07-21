@@ -1483,10 +1483,10 @@ class TestShareGame(TestSudokuE2E):
 
 
 class TestDifficultyChangeNewGame(TestSudokuE2E):
-    """Tests that changing difficulty triggers a new game."""
+    """Tests that changing difficulty only selects it, New Game button starts the game."""
 
     def test_difficulty_change_starts_new_game(self):
-        """Clicking a difficulty button should start a new game with that difficulty."""
+        """Clicking a difficulty button should NOT start a new game. Only New Game does."""
         self.page.goto(APP_URL)
         self.page.wait_for_selector("#board .cell")
         self.page.wait_for_timeout(1000)
@@ -1494,14 +1494,14 @@ class TestDifficultyChangeNewGame(TestSudokuE2E):
         # Get initial game ID
         game_id_before = self.page.text_content("#gameIdDisplay")
 
-        # Switch to Easy difficulty
+        # Switch to Easy difficulty (should NOT create a new game)
         self.page.click(".diff-btn[data-difficulty='30']")
-        self.page.wait_for_timeout(1000)
+        self.page.wait_for_timeout(500)
 
-        # Game ID should change (new game)
+        # Game ID should NOT change (difficulty only selects, doesn't start)
         game_id_after = self.page.text_content("#gameIdDisplay")
-        self.assertNotEqual(game_id_before, game_id_after,
-                          "New game should have different ID after difficulty change")
+        self.assertEqual(game_id_before, game_id_after,
+                         "Difficulty change should NOT start a new game")
 
 
 
@@ -1687,6 +1687,99 @@ class TestNewGameFromWinModal(TestSudokuE2E):
         # Timer should be reset
         timer = self.page.text_content("#timer")
         self.assertTrue(timer.startswith("00:0"), f"Timer should be reset, got: {timer}")
+
+
+
+
+class TestButtonLayout(TestSudokuE2E):
+    """Tests for reorganized button layout."""
+
+    def test_action_buttons_use_grid_not_single_column(self):
+        """Action buttons should be in a grid layout, not single column."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(500)
+
+        # The actions section should use grid, not flex column
+        actions_display = self.page.eval_on_selector(
+            ".actions",
+            "el => getComputedStyle(el).display"
+        )
+        self.assertEqual(actions_display, "grid",
+                        "Actions should use grid layout, not flex column")
+
+    def test_new_game_button_is_full_width(self):
+        """New Game button should span full width of its grid row."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(500)
+
+        new_game = self.page.query_selector("#newGameBtn")
+        self.assertIsNotNone(new_game)
+
+        # New Game should span full width (grid-column: 1 / -1 or span 2)
+        grid_column = self.page.eval_on_selector(
+            "#newGameBtn",
+            "el => getComputedStyle(el).gridColumn"
+        )
+        self.assertTrue(
+            "span 2" in grid_column.lower() or "1 / -1" in grid_column or "1/-1" in grid_column,
+            f"New Game should span full width, got grid-column: {grid_column}"
+        )
+
+
+class TestDifficultySelectionOnly(TestSudokuE2E):
+    """Tests that difficulty buttons only select, not start new game."""
+
+    def test_difficulty_does_not_change_game_id(self):
+        """Clicking difficulty should NOT change the current game."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        game_id_before = self.page.text_content("#gameIdDisplay")
+
+        # Click Easy difficulty
+        self.page.click(".diff-btn[data-difficulty='30']")
+        self.page.wait_for_timeout(500)
+
+        game_id_after = self.page.text_content("#gameIdDisplay")
+        self.assertEqual(game_id_before, game_id_after,
+                         "Difficulty change should NOT create a new game")
+
+    def test_difficulty_shows_hint_message(self):
+        """Changing difficulty should show a hint telling user to start new game."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Click Easy difficulty
+        self.page.click(".diff-btn[data-difficulty='30']")
+        self.page.wait_for_timeout(300)
+
+        hint_text = self.page.text_content("#hintText")
+        self.assertTrue(
+            "new game" in hint_text.lower() or "difficulty" in hint_text.lower(),
+            f"Should show hint about difficulty change, got: {hint_text}"
+        )
+
+    def test_new_game_uses_selected_difficulty(self):
+        """New Game button should use the currently selected difficulty."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Select Hard difficulty
+        self.page.click(".diff-btn[data-difficulty='50']")
+        self.page.wait_for_timeout(300)
+
+        # Now click New Game
+        self.page.click("#newGameBtn")
+        self.page.wait_for_timeout(1000)
+
+        # The difficulty label should show Hard
+        label = self.page.text_content("#difficultyLabel")
+        self.assertEqual(label, "Hard")
 
 
 if __name__ == "__main__":
