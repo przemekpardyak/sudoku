@@ -43,8 +43,8 @@ graph TD
 ### 1. Read Requirements
 
 - Read `REQUIREMENTS.md` at the start of each iteration
-- Process items in the order they appear (may group related items)
-- Skip items already marked ✅ Done
+- Process items in the order they appear, but may group or reorder if related items are better tackled together
+- Skip items already marked ✅ Done or ❌ Failed
 
 ### 2. Write Tests First (TDD)
 
@@ -97,8 +97,9 @@ graph TD
 
 ### 8. Update Requirements File
 
-- Mark the requirement as ✅ Done or 🚧 In progress
+- Mark the requirement as ✅ Done, ❌ Failed, or 🚧 In progress
 - Add a comment summarizing what was done
+- For ❌ Failed: explain why the requirement cannot be met and what was attempted
 - Note any remaining gaps or issues
 - Move completed items to the "Completed" section
 
@@ -218,6 +219,11 @@ All async communication goes through `REQUIREMENTS.md`:
 - Add dark mode toggle persistence across sessions
   - ✅ Done: Theme saved to localStorage, restored on page load. 
     Added E2E test test_theme_persistence. Committed as abc123.
+
+- Add real-time multiplayer mode
+  - ❌ Failed: Requires WebSocket support not available in current Flask 
+    deployment. Would need migration to Flask-SocketIO or a separate service.
+    Attempted long-polling approach but latency was unacceptable.
 ```
 
 The agent also notifies in chat after each commit and deploy.

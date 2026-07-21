@@ -25,7 +25,7 @@
 <!-- Add your requirements below as bullet points. -->
 <!-- The agent will add comments under each one as it works on them. -->
 <!-- Format: - [requirement text] -->
-<!--         - ✅ Done: [summary] or 🚧 In progress or ⏳ Pending -->
+<!--         - ✅ Done: [summary] or 🚧 In progress or ❌ Failed: [why] or ⏳ Pending -->
 
 - (waiting for first batch of requirements from user)
 
