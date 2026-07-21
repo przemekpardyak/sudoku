@@ -332,6 +332,16 @@ venv/bin/python3 -m unittest tests.test_e2e_sudoku -v
 > [!NOTE]
 > E2E tests automatically start a Flask dev server on `localhost:5000` if one isn't already running. They clean up all games between tests via the API.
 
+### Skipped tests
+
+One test is skipped by default because it takes ~14 minutes to run:
+
+- **`test_solve_with_minimal_clues`** — Solves a 17-clue Sudoku (the mathematical minimum for a unique solution). Our solver uses naive backtracking with no constraint propagation or MRV heuristic; with only 17 clues, the search space is vast and the solver explores millions of deep branches before finding contradictions. To force-run it:
+
+```bash
+SUDOKU_RUN_SLOW=1 venv/bin/python3 -m unittest tests.test_solver_robustness -v
+```
+
 ### Test output example
 
 ```

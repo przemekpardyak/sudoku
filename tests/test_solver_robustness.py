@@ -1,6 +1,7 @@
 """
 Tests for solver robustness with malformed and edge-case inputs.
 """
+import os
 import unittest
 from sudoku import _is_valid, _has_conflicts, _solve, _count_solutions, generate_puzzle
 
@@ -8,7 +9,13 @@ from sudoku import _is_valid, _has_conflicts, _solve, _count_solutions, generate
 class TestSolverRobustness(unittest.TestCase):
     """Tests for solver robustness with edge cases."""
 
-    @unittest.skip("17-clue puzzle takes ~14 minutes — too slow for regular suite")
+    @unittest.skipUnless(
+        os.environ.get("SUDOKU_RUN_SLOW") == "1",
+        "17-clue puzzle takes ~14 minutes — uses naive backtracking with no constraint "
+        "propagation or MRV heuristic; with only 17 clues (mathematical minimum for unique "
+        "solution), the solver explores millions of deep branches before finding contradictions. "
+        "Set SUDOKU_RUN_SLOW=1 to force run."
+    )
     def test_solve_with_minimal_clues(self):
         """Solver should handle a board with only 17 clues (minimum for unique solution)."""
         # A known 17-clue Sudoku

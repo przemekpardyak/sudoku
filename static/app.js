@@ -792,8 +792,7 @@
 
   function scheduleAutoSave() {
     if (gameCompleted) return;
-    if (saveTimer) clearTimeout(saveTimer);
-    saveTimer = setTimeout(saveGameToServer, 2000); // debounce 2s
+    saveGameToServer(); // save immediately on every state change
   }
 
   async function createGameOnServer() {

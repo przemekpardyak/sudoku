@@ -458,7 +458,7 @@ class TestGameStorage(TestSudokuE2E):
         self.assertGreater(len(data["games"]), 0, "Game should be auto-saved")
 
     def test_progress_saved_after_move(self):
-        """Placing a number should trigger auto-save."""
+        """Placing a number should trigger immediate auto-save."""
         self.page.goto(APP_URL)
         self.page.wait_for_selector("#board .cell")
 
@@ -467,12 +467,34 @@ class TestGameStorage(TestSudokuE2E):
         row, col = empty
         self._click_cell(row, col)
         self.page.keyboard.press("5")
-        self.page.wait_for_timeout(2500)  # Wait for auto-save (2s debounce)
+        self.page.wait_for_timeout(500)  # Save is now immediate (no 2s debounce)
 
         # Check that the game was updated via API
         res = requests.get(f"{APP_URL}/api/games")
         games = res.json()["games"]
         self.assertGreater(len(games), 0)
+
+    def test_immediate_save_on_number_placement(self):
+        """Number placement should be saved immediately to the server."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+
+        # Get the game ID
+        game_id_display = self.page.text_content("#gameIdDisplay")
+        self.assertTrue(game_id_display, "Game ID should be displayed")
+
+        # Place a number and immediately check the server has it
+        empty = self._find_empty_cell()
+        row, col = empty
+        self._click_cell(row, col)
+        self.page.keyboard.press("7")
+        self.page.wait_for_timeout(500)  # Immediate save
+
+        # Verify the board on the server matches
+        games = requests.get(f"{APP_URL}/api/games").json()["games"]
+        self.assertGreater(len(games), 0)
+        game = requests.get(f"{APP_URL}/api/games/{games[0]['game_id']}").json()
+        self.assertEqual(game["board"][row][col], 7)
 
 
 if __name__ == "__main__":

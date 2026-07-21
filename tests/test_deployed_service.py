@@ -1,22 +1,67 @@
 """
-Smoke tests for the deployed Cloud Run service.
-Tests the live service at https://sudoku-d5mqgioeaa-uc.a.run.app
+Smoke tests for the Sudoku service over HTTP.
+
+By default, these tests auto-start the Flask app on localhost:5000.
+To test against the deployed Cloud Run service instead:
+
+    1. Start the proxy:
+       gcloud run services proxy sudoku --region=us-central1 --project=ppardyak-cad --port=8080
+
+    2. Run with env var:
+       SUDOKU_TEST_URL=http://localhost:8080 venv/bin/python3 -m unittest tests.test_deployed_service -v
+
+Or with a bearer token directly:
+       SUDOKU_TEST_URL=https://sudoku-d5mqgioeaa-uc.a.run.app \
+         SUDOKU_TOKEN=$(gcloud auth print-identity-token) \
+         venv/bin/python3 -m unittest tests.test_deployed_service -v
 """
 import json
+import os
 import unittest
 import urllib.request
 import urllib.error
+import subprocess
+import time
+import signal
 
-BASE_URL = "https://sudoku-d5mqgioeaa-uc.a.run.app"
+BASE_URL = os.environ.get("SUDOKU_TEST_URL", "http://localhost:5000")
+TOKEN = os.environ.get("SUDOKU_TOKEN", "")
+
+
+def _wait_for_app(timeout=30):
+    """Wait for the service to be reachable."""
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            req = urllib.request.Request(f"{BASE_URL}/")
+            if TOKEN:
+                req.add_header("Authorization", f"Bearer {TOKEN}")
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                if resp.status == 200:
+                    return True
+        except Exception:
+            pass
+        time.sleep(0.5)
+    return False
 
 
 def _get(path):
     try:
         req = urllib.request.Request(f"{BASE_URL}{path}")
+        if TOKEN:
+            req.add_header("Authorization", f"Bearer {TOKEN}")
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return resp.status, json.loads(resp.read())
+            body = resp.read()
+            try:
+                return resp.status, json.loads(body)
+            except (json.JSONDecodeError, ValueError):
+                return resp.status, {"raw": body.decode("utf-8", errors="replace")}
     except urllib.error.HTTPError as e:
-        return e.code, json.loads(e.read()) if e.read else {}
+        body = e.read()
+        try:
+            return e.code, json.loads(body) if body else {}
+        except (json.JSONDecodeError, ValueError):
+            return e.code, {"raw": body.decode("utf-8", errors="replace")}
     except Exception as e:
         return 0, {"error": str(e)}
 
@@ -29,6 +74,8 @@ def _post(path, data):
             headers={"Content-Type": "application/json"},
             method="POST"
         )
+        if TOKEN:
+            req.add_header("Authorization", f"Bearer {TOKEN}")
         with urllib.request.urlopen(req, timeout=30) as resp:
             return resp.status, json.loads(resp.read())
     except urllib.error.HTTPError as e:
@@ -38,9 +85,27 @@ def _post(path, data):
         return 0, {"error": str(e)}
 
 
-@unittest.skipUnless(False, "Set to True to run against live service")
 class TestDeployedService(unittest.TestCase):
-    """Smoke tests for the deployed Cloud Run service."""
+    """Smoke tests for the Sudoku service over HTTP."""
+
+    @classmethod
+    def setUpClass(cls):
+        """Auto-start Flask app if pointing at localhost and not running."""
+        cls._app_process = None
+        if "localhost" in BASE_URL and not _wait_for_app(timeout=2):
+            cls._app_process = subprocess.Popen(
+                ["venv/bin/python3", "app.py"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                preexec_fn=os.setsid,
+            )
+            if not _wait_for_app(timeout=15):
+                raise RuntimeError("Flask app did not start in time")
+
+    @classmethod
+    def tearDownClass(cls):
+        if cls._app_process:
+            os.killpg(os.getpgid(cls._app_process.pid), signal.SIGTERM)
 
     def test_root_page(self):
         """Root page should return HTML."""
