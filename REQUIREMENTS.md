@@ -29,16 +29,11 @@
 
 
 
-- Clicking on auto-notes if they have been turned on, should turn them off. However, any notes that were input from a user, should remain
-  - ✅ Done: Implemented toggle behavior using `autoNotesMask` array to track auto-generated notes. Toggle off clears only auto notes, preserves user-entered. Button shows active state. 3 E2E tests added.
-
-- When hint is pressed, it should be highlighted the way it is right now.  Howver, it should not disappear the moment the curors leaves the hint button.  Instead, the hint should be visible until the user presses the hint button again. Make the button look depressed when hint is active.  Make the hint diseappear when button is off.  Additionally, if a user clicks on the cell that has the hint in it, the hint should be accepted as the number in that cell and should be removed from the hint mode.
-  - ✅ Done: Changed from hold-to-preview to click-to-toggle. Button gets active class (depressed look). Hint stays visible until clicked again, cell clicked to accept, or Escape. Removed mousedown/mouseleave/touchstart listeners. 4 new E2E tests, updated 2 old tests.
-
-
 - Make it obvious that the game is paused.  Also, to make it impossible to cheat when the game is paused, make the board invisible, e.g., by blurring.
+  - ✅ Done: Board gets blur(12px) + pointer-events:none when paused. "Paused" overlay shown. Unblurs on resume/new game/restore. 2 E2E tests added. Commit: [`7ce4d18`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
 
 - Add users with login, password, the works.  Keep proper per user stats and full game history.  Do not over-engineer this for now. Simple user management.  Create the first user with the credentials:  username:  testuser, password: password and migrate the exisiting game state to them.
+  - ⏳ Pending
 
 ---
 
@@ -67,6 +62,9 @@
 
 - Allow users to make errors.  If they input the wrong number that conflicts with the numbers already established, it should be marked as an error.  However, if the new number does not violate any of the board constraints, it should be allowed.  Currently, the user is not allowed to make an error.  Only flag such numbers when the user clicks the "Check" button.
   - ✅ Done: Removed solution comparison from placeFinal — numbers are always placed. Conflict detection highlights row/col/box conflicts in amber. Mistakes counter no longer incremented on placement — only Check button flags errors against solution. 3 E2E tests added. Commit: [`a38022f`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
+
+- Make it obvious that the game is paused.  Also, to make it impossible to cheat when the game is paused, make the board invisible, e.g., by blurring.
+  - ✅ Done: Board gets blur(12px) + pointer-events:none when paused. "Paused" overlay shown. Unblurs on resume/new game/restore. 2 E2E tests added. Commit: [`7ce4d18`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
 
 ---
 
