@@ -35,7 +35,7 @@ def _now_iso() -> str:
 class GameStorage:
     """Abstract game storage interface."""
 
-    def create_game(self, state: dict[str, Any]) -> str:
+    def create_game(self, state: dict[str, Any], user_id: str | None = None) -> str:
         raise NotImplementedError
 
     def get_game(self, game_id: str) -> dict[str, Any] | None:
@@ -44,10 +44,17 @@ class GameStorage:
     def save_game(self, game_id: str, state: dict[str, Any]) -> None:
         raise NotImplementedError
 
-    def list_games(self, limit: int = 50) -> list[dict[str, Any]]:
+    def list_games(self, limit: int = 50, user_id: str | None = None) -> list[dict[str, Any]]:
         raise NotImplementedError
 
     def delete_game(self, game_id: str) -> bool:
+        raise NotImplementedError
+
+    def migrate_games_to_user(self, user_id: str) -> int:
+        """Assign user_id to all games that don't have one.
+
+        Returns the count of migrated games.
+        """
         raise NotImplementedError
 
 
@@ -57,12 +64,14 @@ class InMemoryStorage(GameStorage):
     def __init__(self) -> None:
         self._games: dict[str, dict[str, Any]] = {}
 
-    def create_game(self, state: dict[str, Any]) -> str:
+    def create_game(self, state: dict[str, Any], user_id: str | None = None) -> str:
         game_id = str(uuid.uuid4())
         state = dict(state)
         state["game_id"] = game_id
         state["created_at"] = _now_iso()
         state["updated_at"] = state["created_at"]
+        if user_id is not None:
+            state["user_id"] = user_id
         self._games[game_id] = state
         return game_id
 
@@ -79,17 +88,28 @@ class InMemoryStorage(GameStorage):
         merged["updated_at"] = _now_iso()
         self._games[game_id] = merged
 
-    def list_games(self, limit: int = 50) -> list[dict[str, Any]]:
+    def list_games(self, limit: int = 50, user_id: str | None = None) -> list[dict[str, Any]]:
         games = sorted(
             self._games.values(),
             key=lambda g: g.get("updated_at", ""),
             reverse=True,
         )
+        if user_id is not None:
+            games = [g for g in games if g.get("user_id") == user_id]
         # Return metadata only (no board/solution/stacks)
         return [self._summarize(g) for g in games[:limit]]
 
     def delete_game(self, game_id: str) -> bool:
         return self._games.pop(game_id, None) is not None
+
+    def migrate_games_to_user(self, user_id: str) -> int:
+        count = 0
+        for game_id, game in self._games.items():
+            if not game.get("user_id"):
+                game["user_id"] = user_id
+                game["updated_at"] = _now_iso()
+                count += 1
+        return count
 
     @staticmethod
     def _summarize(game: dict[str, Any]) -> dict[str, Any]:
@@ -169,12 +189,14 @@ class FirestoreStorage(GameStorage):
                     pass  # leave as-is if not valid JSON
         return out
 
-    def create_game(self, state: dict[str, Any]) -> str:
+    def create_game(self, state: dict[str, Any], user_id: str | None = None) -> str:
         game_id = str(uuid.uuid4())
         state = self._serialize(state)
         state["game_id"] = game_id
         state["created_at"] = _now_iso()
         state["updated_at"] = state["created_at"]
+        if user_id is not None:
+            state["user_id"] = user_id
         self._collection.document(game_id).set(state)
         return game_id
 
@@ -193,9 +215,12 @@ class FirestoreStorage(GameStorage):
         state["updated_at"] = _now_iso()
         self._collection.document(game_id).set(state, merge=True)
 
-    def list_games(self, limit: int = 50) -> list[dict[str, Any]]:
+    def list_games(self, limit: int = 50, user_id: str | None = None) -> list[dict[str, Any]]:
+        query = self._collection
+        if user_id is not None:
+            query = self._collection.where("user_id", "==", user_id)
         docs = (
-            self._collection.order_by("updated_at", direction="DESCENDING")
+            query.order_by("updated_at", direction="DESCENDING")
             .limit(limit)
             .stream()
         )
@@ -215,6 +240,28 @@ class FirestoreStorage(GameStorage):
             return False
         ref.delete()
         return True
+
+    def migrate_games_to_user(self, user_id: str) -> int:
+        """Assign user_id to all games that don't have one."""
+        # Query for games where user_id is null or doesn't exist
+        # Firestore doesn't easily query for missing fields, so fetch all and filter
+        count = 0
+        batch = self._db.batch()
+        batch_size = 0
+        docs = self._collection.limit(500).stream()
+        for doc in docs:
+            data = doc.to_dict()
+            if data and not data.get("user_id"):
+                batch.set(doc.reference, {"user_id": user_id, "updated_at": _now_iso()}, merge=True)
+                batch_size += 1
+                count += 1
+                if batch_size >= 400:
+                    batch.commit()
+                    batch = self._db.batch()
+                    batch_size = 0
+        if batch_size > 0:
+            batch.commit()
+        return count
 
 
 # Factory: pick the right storage based on environment.

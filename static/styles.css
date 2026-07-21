@@ -816,3 +816,51 @@ body::before {
   .num-grid { grid-template-columns: repeat(5, 1fr); }
   .num-btn { width: 32px; height: 32px; font-size: 16px; }
 }
+
+/* Login/Register form */
+#loginOverlay input[type="text"],
+#loginOverlay input[type="password"] {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+#loginOverlay input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+#loginOverlay .modal {
+  max-width: 360px;
+}
+#toggleAuthMode {
+  color: var(--accent-hi);
+  text-decoration: none;
+  font-size: 13px;
+}
+#toggleAuthMode:hover { text-decoration: underline; }
+
+/* User info in header */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.user-info .user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+}
+.user-info #logoutBtn {
+  padding: 8px 14px;
+  font-size: 13px;
+}

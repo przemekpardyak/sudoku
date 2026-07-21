@@ -1,5 +1,150 @@
 // Sudoku game controller
 (function () {
+  // --- Auth state ---
+  const loginOverlay = document.getElementById('loginOverlay');
+  const loginForm = document.getElementById('loginForm');
+  const loginUsername = document.getElementById('loginUsername');
+  const loginPassword = document.getElementById('loginPassword');
+  const loginSubmit = document.getElementById('loginSubmit');
+  const loginTitle = document.getElementById('loginTitle');
+  const loginToggleText = document.getElementById('loginToggleText');
+  const toggleAuthMode = document.getElementById('toggleAuthMode');
+  const loginError = document.getElementById('loginError');
+  const userInfo = document.getElementById('userInfo');
+  const userName = document.getElementById('userName');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  let authMode = 'login'; // 'login' | 'register'
+  let currentUsername = null;
+
+  function showLoginOverlay() {
+    loginOverlay.classList.add('show');
+  }
+
+  function hideLoginOverlay() {
+    loginOverlay.classList.remove('show');
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    if (mode === 'login') {
+      loginTitle.textContent = '🔐 Login';
+      loginSubmit.textContent = 'Login';
+      loginToggleText.innerHTML = `Don't have an account? <a href="#" id="toggleAuthMode">Register</a>`;
+    } else {
+      loginTitle.textContent = '✨ Register';
+      loginSubmit.textContent = 'Register';
+      loginToggleText.innerHTML = `Already have an account? <a href="#" id="toggleAuthMode">Login</a>`;
+    }
+    // Re-bind the toggle link
+    document.getElementById('toggleAuthMode').addEventListener('click', (e) => {
+      e.preventDefault();
+      setAuthMode(authMode === 'login' ? 'register' : 'login');
+    });
+  }
+
+  function showLoggedIn(username) {
+    currentUsername = username;
+    userName.textContent = `👤 ${username}`;
+    userInfo.style.display = 'flex';
+    hideLoginOverlay();
+  }
+
+  function showLoggedOut() {
+    currentUsername = null;
+    userInfo.style.display = 'none';
+    showLoginOverlay();
+  }
+
+  async function checkAuth() {
+    try {
+      const res = await fetch('/api/me');
+      const data = await res.json();
+      if (data.authenticated) {
+        showLoggedIn(data.username);
+        return true;
+      }
+      showLoggedOut();
+      return false;
+    } catch (e) {
+      showLoggedOut();
+      return false;
+    }
+  }
+
+  async function doLogin(username, password) {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      showLoggedIn(data.username);
+      loginError.style.display = 'none';
+      startGameAfterAuth();
+      return true;
+    }
+    const data = await res.json().catch(() => ({}));
+    loginError.textContent = data.error || 'Login failed';
+    loginError.style.display = 'block';
+    return false;
+  }
+
+  async function doRegister(username, password) {
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (res.ok) {
+      // Auto-login after registration
+      return doLogin(username, password);
+    }
+    const data = await res.json().catch(() => ({}));
+    loginError.textContent = data.error || 'Registration failed';
+    loginError.style.display = 'block';
+    return false;
+  }
+
+  // Form submit handler
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+    if (!username || !password) {
+      loginError.textContent = 'Username and password are required';
+      loginError.style.display = 'block';
+      return;
+    }
+    loginSubmit.disabled = true;
+    loginSubmit.textContent = '...';
+    try {
+      if (authMode === 'login') {
+        await doLogin(username, password);
+      } else {
+        await doRegister(username, password);
+      }
+    } finally {
+      loginSubmit.disabled = false;
+      loginSubmit.textContent = authMode === 'login' ? 'Login' : 'Register';
+    }
+  });
+
+  // Toggle login/register
+  toggleAuthMode.addEventListener('click', (e) => {
+    e.preventDefault();
+    setAuthMode(authMode === 'login' ? 'register' : 'login');
+  });
+
+  // Logout
+  logoutBtn.addEventListener('click', async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    showLoggedOut();
+    loginPassword.value = '';
+  });
+
+  // --- Game state ---
   const boardEl = document.getElementById('board');
   const timerEl = document.getElementById('timer');
   const mistakesEl = document.getElementById('mistakes');
@@ -1296,8 +1441,30 @@
     }
   });
 
-  // Start: check for import URL param, try resuming last game, otherwise start new
+  // Start game after successful authentication
+  async function startGameAfterAuth() {
+    const resumed = await tryResumeLastGame();
+    if (!resumed) {
+      await newGame();
+    }
+    // Update game count badge
+    fetch('/api/games?limit=1').then(r => r.json()).then(data => {
+      const btn = document.getElementById('loadGamesBtn');
+      fetch('/api/stats').then(r => r.json()).then(stats => {
+        const total = stats.total_games || 0;
+        btn.textContent = total > 0 ? `📂 Load Games (${total})` : '📂 Load Games';
+      });
+    }).catch(() => {});
+  }
+
+  // Start: check auth, then check for import URL param, try resuming last game, otherwise start new
   (async () => {
+    // Check authentication first — don't start game if not logged in
+    const isAuthed = await checkAuth();
+    if (!isAuthed) {
+      return; // Login overlay is shown, game waits until user logs in
+    }
+
     // Check for shared game import via URL parameter
     const params = new URLSearchParams(window.location.search);
     const importCode = params.get('import');

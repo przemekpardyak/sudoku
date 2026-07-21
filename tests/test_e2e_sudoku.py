@@ -58,8 +58,15 @@ class TestSudokuE2E(unittest.TestCase):
         cls._browser = cls._playwright.chromium.launch(headless=True)
         cls._context = cls._browser.new_context()
         # Clear storage so each test class starts fresh
+        cls._api_session = requests.Session()
+        # Login as testuser for API cleanup requests
         try:
-            requests.delete(f"{APP_URL}/api/games")
+            cls._api_session.post(f"{APP_URL}/api/login",
+                                   json={"username": "testuser", "password": "password"})
+        except Exception:
+            pass
+        try:
+            cls._api_session.delete(f"{APP_URL}/api/games")
         except Exception:
             pass
 
@@ -99,12 +106,54 @@ class TestSudokuE2E(unittest.TestCase):
     def setUp(self):
         self._ensure_server()
         self.page = self._context.new_page()
+        # Log in as testuser before each test
+        self._login("testuser", "password")
+
+    def _login(self, username="testuser", password="password"):
+        """Log in via the browser UI."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_timeout(500)
+        # Check if already logged in as the right user
+        try:
+            res = self.page.evaluate("""() => fetch('/api/me').then(r => r.json())""")
+            if res.get("authenticated") and res.get("username") == username:
+                # Already logged in as the right user, but may need to reload for game
+                login_overlay = self.page.query_selector("#loginOverlay")
+                if login_overlay and login_overlay.is_visible():
+                    # Game not started, need to reload to trigger init
+                    self.page.reload()
+                    self.page.wait_for_timeout(1000)
+                self.page.wait_for_selector("#board .cell", timeout=10000)
+                return
+        except Exception:
+            pass
+        # Need to login — first logout if logged in as someone else
+        logout = self.page.query_selector("#logoutBtn")
+        if logout and logout.is_visible():
+            logout.click()
+            self.page.wait_for_timeout(500)
+        # Now login
+        login_overlay = self.page.query_selector("#loginOverlay")
+        if login_overlay and login_overlay.is_visible():
+            self.page.fill("#loginUsername", username)
+            self.page.fill("#loginPassword", password)
+            self.page.click("#loginSubmit")
+            self.page.wait_for_timeout(1500)  # Wait for login + game load
+        # Wait for the board to be ready
+        self.page.wait_for_selector("#board .cell", timeout=10000)
+
+    def _logout(self):
+        """Log out via the browser UI."""
+        logout = self.page.query_selector("#logoutBtn")
+        if logout and logout.is_visible():
+            logout.click()
+            self.page.wait_for_timeout(500)
 
     def tearDown(self):
         self.page.close()
-        # Clean up games after each test
+        # Clean up games after each test (scoped to testuser session)
         try:
-            requests.delete(f"{APP_URL}/api/games")
+            self._api_session.delete(f"{APP_URL}/api/games")
         except Exception:
             pass
 
@@ -2138,6 +2187,130 @@ class TestPauseBlur(TestSudokuE2E):
             "paused" in body_text.lower() or "Paused" in body_text,
             "Should show 'Paused' indicator when game is paused"
         )
+
+
+class TestAuth(TestSudokuE2E):
+    """E2E tests for the authentication flow and game data scoping."""
+
+    def test_login_overlay_shown_when_not_authed(self):
+        """Login overlay should be visible when not authenticated."""
+        # Create a fresh context without a session cookie
+        ctx = self._browser.new_context()
+        page = ctx.new_page()
+        try:
+            page.goto(APP_URL)
+            page.wait_for_timeout(500)
+            overlay = page.query_selector("#loginOverlay")
+            self.assertIsNotNone(overlay, "Login overlay should exist")
+            self.assertTrue(overlay.is_visible(),
+                            "Login overlay should be visible when not logged in")
+            # Board should NOT have cells yet (game not started)
+            cells = page.query_selector_all("#board .cell")
+            self.assertEqual(len(cells), 0,
+                             "Board should not be rendered when not logged in")
+        finally:
+            ctx.close()
+
+    def test_login_shows_game_ui(self):
+        """After logging in, the game UI should be visible."""
+        # setUp already logs in as testuser
+        # Verify user info is displayed
+        user_info = self.page.query_selector("#userInfo")
+        self.assertIsNotNone(user_info)
+        self.assertTrue(user_info.is_visible(),
+                        "User info should be visible after login")
+        # Verify username is displayed
+        username = self.page.text_content("#userName")
+        self.assertIn("testuser", username)
+        # Board should have cells
+        cells = self.page.query_selector_all("#board .cell")
+        self.assertEqual(len(cells), 81, "Board should be rendered after login")
+        # Login overlay should be hidden
+        overlay = self.page.query_selector("#loginOverlay")
+        self.assertFalse(overlay.is_visible(),
+                         "Login overlay should be hidden after login")
+
+    def test_logout_shows_login_overlay(self):
+        """After logging out, the login overlay should reappear."""
+        self._logout()
+        self.page.wait_for_timeout(500)
+        overlay = self.page.query_selector("#loginOverlay")
+        self.assertTrue(overlay.is_visible(),
+                        "Login overlay should be visible after logout")
+        # User info should be hidden
+        user_info = self.page.query_selector("#userInfo")
+        self.assertFalse(user_info.is_visible(),
+                         "User info should be hidden after logout")
+
+    def test_register_new_user(self):
+        """Registering a new user via UI should log them in."""
+        # First logout
+        self._logout()
+        self.page.wait_for_timeout(500)
+        # Switch to register mode
+        self.page.click("#toggleAuthMode")
+        self.page.wait_for_timeout(200)
+        # Fill in registration form
+        self.page.fill("#loginUsername", "e2euser")
+        self.page.fill("#loginPassword", "e2epass")
+        self.page.click("#loginSubmit")
+        self.page.wait_for_timeout(1500)
+        # Should be logged in
+        user_info = self.page.query_selector("#userInfo")
+        self.assertTrue(user_info.is_visible(),
+                        "User info should be visible after registration")
+        username = self.page.text_content("#userName")
+        self.assertIn("e2euser", username)
+        # Board should have cells
+        cells = self.page.query_selector_all("#board .cell")
+        self.assertEqual(len(cells), 81, "Board should render after registration")
+
+    def test_login_wrong_password_shows_error(self):
+        """Wrong password should show an error and not log in."""
+        self._logout()
+        self.page.wait_for_timeout(500)
+        self.page.fill("#loginUsername", "testuser")
+        self.page.fill("#loginPassword", "wrongpassword")
+        self.page.click("#loginSubmit")
+        self.page.wait_for_timeout(500)
+        error = self.page.query_selector("#loginError")
+        self.assertIsNotNone(error, "Error element should exist")
+        self.assertTrue(error.is_visible(), "Error should be visible after failed login")
+        # Login overlay should still be visible
+        overlay = self.page.query_selector("#loginOverlay")
+        self.assertTrue(overlay.is_visible(), "Login overlay should remain on failed login")
+
+    def test_game_scoped_to_logged_in_user(self):
+        """Games created by one user should not be visible to another."""
+        # setUp logs in as testuser — create a game
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(500)
+        # Get the game count for testuser via the authenticated API session
+        res = self._api_session.get(f"{APP_URL}/api/games")
+        testuser_games = res.json()["games"]
+        # testuser should have at least the current game
+        self.assertGreaterEqual(len(testuser_games), 1,
+                                "testuser should have games")
+
+        # Register a second user and check they don't see testuser's games
+        self._logout()
+        self.page.wait_for_timeout(500)
+        self.page.click("#toggleAuthMode")
+        self.page.wait_for_timeout(200)
+        self.page.fill("#loginUsername", "scopeuser2")
+        self.page.fill("#loginPassword", "scopepass2")
+        self.page.click("#loginSubmit")
+        self.page.wait_for_timeout(1500)
+
+        # Check API: new user should have no games (or just the auto-created one)
+        # Use a fresh API session for the new user
+        api2 = requests.Session()
+        api2.post(f"{APP_URL}/api/login",
+                   json={"username": "scopeuser2", "password": "scopepass2"})
+        res2 = api2.get(f"{APP_URL}/api/games")
+        user2_games = res2.json()["games"]
+        self.assertEqual(len(user2_games), 0,
+                         "New user should not see testuser's games")
 
 
 if __name__ == "__main__":

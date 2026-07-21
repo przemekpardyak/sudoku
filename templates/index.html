@@ -21,6 +21,10 @@
         </div>
       </div>
       <button class="theme-toggle" id="themeToggle" title="Toggle theme (T)">🌙</button>
+      <div class="user-info" id="userInfo" style="display:none;">
+        <span class="user-name" id="userName"></span>
+        <button class="action-btn" id="logoutBtn" title="Log out">⏻ Logout</button>
+      </div>
       <div class="stats">
         <div class="stat">
           <span class="stat-label">Time</span>
@@ -192,6 +196,22 @@
         <button class="action-btn danger" id="clearAllGamesBtn">🗑 Clear All</button>
         <button class="action-btn" id="closeGamesBtn">Close</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Login/Register overlay -->
+  <div class="overlay show" id="loginOverlay">
+    <div class="modal">
+      <h2 id="loginTitle">🔐 Login</h2>
+      <form id="loginForm" style="display:flex; flex-direction:column; gap:12px;">
+        <input type="text" id="loginUsername" placeholder="Username" autocomplete="username" />
+        <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" />
+        <button type="submit" class="action-btn primary" id="loginSubmit">Login</button>
+      </form>
+      <div style="margin-top:12px; text-align:center;">
+        <span id="loginToggleText">Don't have an account? <a href="#" id="toggleAuthMode">Register</a></span>
+      </div>
+      <p id="loginError" style="color:var(--danger); display:none; margin-top:8px;"></p>
     </div>
   </div>
 

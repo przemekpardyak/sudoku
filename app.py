@@ -2,19 +2,106 @@ from __future__ import annotations
 
 import base64
 import json as _json
+import os
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, session
 
+from auth import authenticate, create_user, ensure_default_user, get_default_user
 from storage import get_storage
 from sudoku import generate_puzzle
 
 app = Flask(__name__)
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "sudoku-dev-secret-key-change-in-prod")
+
+# Ensure default user exists on import
+ensure_default_user()
 
 
 @app.route("/")
 def index() -> str:
     """Render the main game page."""
     return render_template("index.html")
+
+
+def get_current_user_id() -> str | None:
+    """Return the current user's ID from the session, or None."""
+    return session.get("user_id")
+
+
+# --- Auth endpoints ---
+
+
+@app.route("/api/register", methods=["POST"])
+def register() -> object:
+    """Register a new user.
+
+    Request body (JSON):
+        username: Desired username.
+        password: Plaintext password.
+
+    Returns:
+        201 with user_id and username on success.
+        400 if username or password is missing.
+        409 if username already exists.
+    """
+    data = request.get_json(silent=True) or {}
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+    if not username or not password:
+        return jsonify({"error": "Username and password are required"}), 400
+    try:
+        user = create_user(username, password)
+    except ValueError:
+        return jsonify({"error": "Username already exists"}), 409
+    return jsonify({"user_id": user["user_id"], "username": user["username"]}), 201
+
+
+@app.route("/api/login", methods=["POST"])
+def login() -> object:
+    """Authenticate a user and set the session.
+
+    Request body (JSON):
+        username: Username.
+        password: Plaintext password.
+
+    Returns:
+        200 with username on success.
+        401 if credentials are invalid.
+    """
+    data = request.get_json(silent=True) or {}
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+    user = authenticate(username, password)
+    if user is None:
+        return jsonify({"error": "Invalid credentials"}), 401
+    session["user_id"] = user["user_id"]
+    session["username"] = user["username"]
+    return jsonify({"user_id": user["user_id"], "username": user["username"]})
+
+
+@app.route("/api/logout", methods=["POST"])
+def logout() -> object:
+    """Clear the session and log the user out."""
+    session.clear()
+    return jsonify({"ok": True})
+
+
+@app.route("/api/me", methods=["GET"])
+def me() -> object:
+    """Return the current user info from the session."""
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({"authenticated": False})
+    from auth import get_user
+    user = get_user(user_id)
+    if user is None:
+        session.clear()
+        return jsonify({"authenticated": False})
+    return jsonify({
+        "authenticated": True,
+        "user_id": user["user_id"],
+        "username": user["username"],
+    })
 
 
 @app.route("/api/new-game")
@@ -78,21 +165,29 @@ def weekly_puzzle() -> object:
 
 @app.route("/api/games", methods=["GET"])
 def list_games() -> object:
-    """List saved games (metadata only — no board/solution data)."""
+    """List saved games (metadata only — no board/solution data).
+
+    Games are scoped to the current logged-in user.
+    """
     try:
         limit = int(request.args.get("limit", 50))
     except (ValueError, TypeError):
         limit = 50
     storage = get_storage()
-    games = storage.list_games(limit=limit)
+    user_id = get_current_user_id()
+    games = storage.list_games(limit=limit, user_id=user_id)
     return jsonify({"games": games})
 
 
 @app.route("/api/games", methods=["DELETE"])
 def delete_all_games() -> object:
-    """Delete all saved games. Returns count of deleted games."""
+    """Delete all saved games. Returns count of deleted games.
+
+    Only deletes the current user's games.
+    """
     storage = get_storage()
-    games = storage.list_games(limit=500)
+    user_id = get_current_user_id()
+    games = storage.list_games(limit=500, user_id=user_id)
     count = 0
     for game in games:
         if storage.delete_game(game["game_id"]):
@@ -102,10 +197,14 @@ def delete_all_games() -> object:
 
 @app.route("/api/games", methods=["POST"])
 def create_game() -> object:
-    """Create a new saved game with full state."""
+    """Create a new saved game with full state.
+
+    The game is associated with the current logged-in user's user_id.
+    """
     data = request.get_json(force=True)
     storage = get_storage()
-    game_id = storage.create_game(data)
+    user_id = get_current_user_id()
+    game_id = storage.create_game(data, user_id=user_id)
     return jsonify({"game_id": game_id}), 201
 
 

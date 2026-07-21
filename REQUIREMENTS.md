@@ -10,13 +10,13 @@
 
 | Field | Value |
 |-------|-------|
-| **Last deployed** | 2026-07-21 22:15 UTC |
-| **Revision** | sudoku-00005-tp7 |
+| **Last deployed** | 2026-07-21 22:39 UTC |
+| **Revision** | sudoku-00007-hvr |
 | **URL** | https://sudoku-d5mqgioeaa-uc.a.run.app |
 | **Proxy** | `gcloud run services proxy sudoku --region=us-central1 --project=ppardyak-cad --port=8080` |
 | **Local dev** | `http://localhost:5000` (venv/bin/python3 app.py) |
-| **Tests** | 980 total (888 API + 92 E2E), 1 skipped |
-| **Git HEAD** | b204157 |
+| **Tests** | 985 total (888 API + 97 E2E), 1 skipped |
+| **Git HEAD** | 34ec0ba |
 
 ---
 
@@ -33,7 +33,17 @@
   - ✅ Done: Board gets blur(12px) + pointer-events:none when paused. "Paused" overlay shown. Unblurs on resume/new game/restore. 2 E2E tests added. Commit: [`7ce4d18`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
 
 - Add users with login, password, the works.  Keep proper per user stats and full game history.  Do not over-engineer this for now. Simple user management.  Create the first user with the credentials:  username:  testuser, password: password and migrate the exisiting game state to them.
-  - ⏳ Pending
+  - 🚧 In progress
+  - **Design Decisions:**
+    - Use Flask session-based auth (no JWT, keep it simple)
+    - Store users in Firestore `users` collection (same DB, different collection)
+    - Password hashing with `hashlib.pbkdf2_hmac` + salt (no external deps)
+    - API endpoints: `/api/register`, `/api/login`, `/api/logout`, `/api/me`
+    - Games get `user_id` field — existing games migrated to `testuser`'s user_id
+    - `list_games` and `create_game` scoped to current user
+    - Frontend: show login form if not authenticated, game UI if logged in
+    - Create `testuser` with password `password` on app startup if not exists
+    - In-memory storage also supports users for local dev/testing
 
 ---
 
