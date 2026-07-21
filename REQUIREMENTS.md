@@ -33,7 +33,7 @@
   - ✅ Done: Board gets blur(12px) + pointer-events:none when paused. "Paused" overlay shown. Unblurs on resume/new game/restore. 2 E2E tests added. Commit: [`7ce4d18`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
 
 - Add users with login, password, the works.  Keep proper per user stats and full game history.  Do not over-engineer this for now. Simple user management.  Create the first user with the credentials:  username:  testuser, password: password and migrate the exisiting game state to them.
-  - 🚧 In progress
+  - ✅ Done: Session-based auth with pbkdf2_hmac password hashing (no external deps). auth.py with Firestore + in-memory user storage. /api/register, /api/login, /api/logout, /api/me endpoints. Games scoped by user_id in storage (create_game, list_games, migrate_games_to_user). Login/register UI overlay, user info + logout in header. 30 unit tests + 6 E2E tests. Default user testuser/password created on startup. Commit: [`0c43106`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
   - **Design Decisions:**
     - Use Flask session-based auth (no JWT, keep it simple)
     - Store users in Firestore `users` collection (same DB, different collection)
