@@ -107,6 +107,10 @@ When a requirement has ambiguity or requires design choices:
 - Commit after each meaningful task (not every file change)
 - **Do NOT push** — pushing is behind a password
 - Notify the user: "Committed: [hash] — [message]"
+- **Add the commit link** to the requirement's status in `REQUIREMENTS.md`:
+  ```markdown
+  - ✅ Done: [summary]. Commit: [`abc1234`](file:///path/to/repo)
+  ```
 
 ### 8. Deploy to GCP
 

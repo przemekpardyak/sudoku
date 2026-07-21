@@ -2087,5 +2087,58 @@ class TestAllowUserErrors(TestSudokuE2E):
             )
 
 
+
+
+class TestPauseBlur(TestSudokuE2E):
+    """Tests that the board is blurred/hidden when paused."""
+
+    def test_board_blurred_when_paused(self):
+        """Board should have a blur/hidden class when game is paused."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Click pause button
+        self.page.click("#pauseBtn")
+        self.page.wait_for_timeout(300)
+
+        # Board should have a paused class or blur filter
+        board_filter = self.page.eval_on_selector(
+            "#board",
+            "el => getComputedStyle(el).filter"
+        )
+        self.assertNotEqual(board_filter, "none",
+                           f"Board should have blur filter when paused, got: {board_filter}")
+
+        # Unpause
+        self.page.click("#pauseBtn")
+        self.page.wait_for_timeout(300)
+
+        # Board should NOT be blurred when unpaused
+        board_filter_after = self.page.eval_on_selector(
+            "#board",
+            "el => getComputedStyle(el).filter"
+        )
+        self.assertEqual(board_filter_after, "none",
+                         f"Board should NOT be blurred when unpaused, got: {board_filter_after}")
+
+    def test_pause_shows_paused_indicator(self):
+        """A 'Paused' indicator should be visible when paused."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Click pause
+        self.page.click("#pauseBtn")
+        self.page.wait_for_timeout(300)
+
+        # Check for paused text somewhere on the page
+        body_text = self.page.text_content("body")
+        self.assertTrue(
+            "paused" in body_text.lower() or "Paused" in body_text,
+            "Should show 'Paused' indicator when game is paused"
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

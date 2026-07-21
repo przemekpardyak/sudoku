@@ -671,6 +671,7 @@
     currentGameId = null;
     isPaused = false;
     document.getElementById('pauseBtn').textContent = '⏸ Pause';
+    document.getElementById('board').classList.remove('paused');
     updateUndoRedoButtons();
     flashHint('Generating new puzzle…');
     try {
@@ -787,13 +788,16 @@
     if (gameCompleted) return;
     isPaused = !isPaused;
     const pauseBtn = document.getElementById('pauseBtn');
+    const board = document.getElementById('board');
     if (isPaused) {
       stopTimer();
       pauseBtn.textContent = '▶ Resume';
+      board.classList.add('paused');
       flashHint('Game paused.');
     } else {
       resumeTimer();
       pauseBtn.textContent = '⏸ Pause';
+      board.classList.remove('paused');
       flashHint('Game resumed.');
     }
     scheduleAutoSave();
@@ -921,6 +925,11 @@
     isPaused = state.paused || false;
     hintsUsed = state.hintsUsed || 0;
     document.getElementById('pauseBtn').textContent = isPaused ? '▶ Resume' : '⏸ Pause';
+    if (isPaused) {
+      document.getElementById('board').classList.add('paused');
+    } else {
+      document.getElementById('board').classList.remove('paused');
+    }
     undoStack = state.undoStack || [];
     redoStack = state.redoStack || [];
     selected = null;
