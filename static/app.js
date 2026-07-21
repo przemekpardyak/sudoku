@@ -351,17 +351,26 @@
       }
     }
 
-    if (num !== solution[r][c]) {
-      getCell(r, c).classList.add('error');
-      mistakes++;
-      mistakesEl.textContent = mistakes;
-      mistakesEl.classList.remove('mistake-flash');
-      void mistakesEl.offsetWidth; // trigger reflow
-      mistakesEl.classList.add('mistake-flash');
-      flashHint('Not quite — try again.');
-    } else {
-      flashHint('');
+    // Check for row/col/box conflicts — mark but still allow placement
+    let hasConflict = false;
+    for (let i = 0; i < 9; i++) {
+      if (i !== c && board[r][i] === num) hasConflict = true;
+      if (i !== r && board[i][c] === num) hasConflict = true;
     }
+    if (!hasConflict) {
+      const br = Math.floor(r / 3) * 3;
+      const bc = Math.floor(c / 3) * 3;
+      for (let r2 = br; r2 < br + 3; r2++) {
+        for (let c2 = bc; c2 < bc + 3; c2++) {
+          if ((r2 !== r || c2 !== c) && board[r2][c2] === num) hasConflict = true;
+        }
+      }
+    }
+    if (hasConflict) {
+      getCell(r, c).classList.add('conflict');
+    }
+
+    flashHint('');
   }
 
   // ----- Game actions -----

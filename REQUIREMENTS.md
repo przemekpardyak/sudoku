@@ -10,13 +10,13 @@
 
 | Field | Value |
 |-------|-------|
-| **Last deployed** | 2026-07-21 21:24 UTC |
-| **Revision** | sudoku-00003-fxr |
+| **Last deployed** | 2026-07-21 22:15 UTC |
+| **Revision** | sudoku-00005-tp7 |
 | **URL** | https://sudoku-d5mqgioeaa-uc.a.run.app |
 | **Proxy** | `gcloud run services proxy sudoku --region=us-central1 --project=ppardyak-cad --port=8080` |
 | **Local dev** | `http://localhost:5000` (venv/bin/python3 app.py) |
-| **Tests** | 973 total (888 API + 85 E2E), 1 skipped |
-| **Git HEAD** | 7f20f67 |
+| **Tests** | 980 total (888 API + 92 E2E), 1 skipped |
+| **Git HEAD** | b204157 |
 
 ---
 
@@ -35,7 +35,6 @@
 - When hint is pressed, it should be highlighted the way it is right now.  Howver, it should not disappear the moment the curors leaves the hint button.  Instead, the hint should be visible until the user presses the hint button again. Make the button look depressed when hint is active.  Make the hint diseappear when button is off.  Additionally, if a user clicks on the cell that has the hint in it, the hint should be accepted as the number in that cell and should be removed from the hint mode.
   - ✅ Done: Changed from hold-to-preview to click-to-toggle. Button gets active class (depressed look). Hint stays visible until clicked again, cell clicked to accept, or Escape. Removed mousedown/mouseleave/touchstart listeners. 4 new E2E tests, updated 2 old tests.
 
-- Allow users to make errors.  If they input the wrong number that conflicts with the numbers already established, it should be marked as an error.  However, if the new number does not violate any of the board constraints, it should be allowed.  Currently, the user is not allowed to make an error.  Only flag such numbers when the user clicks the "Check" button.  
 
 - Make it obvious that the game is paused.  Also, to make it impossible to cheat when the game is paused, make the board invisible, e.g., by blurring.
 
@@ -61,6 +60,12 @@
 
 - Clicking on auto-notes if they have been turned on, should turn them off. However, any notes that were input from a user, should remain
   - ✅ Done: Implemented toggle behavior using `autoNotesMask` array to track auto-generated notes. Toggle off clears only auto notes, preserves user-entered. Button shows active state. 3 E2E tests added.
+
+- When hint is pressed, it should be highlighted the way it is right now.  Howver, it should not disappear the moment the curors leaves the hint button.  Instead, the hint should be visible until the user presses the hint button again. Make the button look depressed when hint is active.  Make the hint diseappear when button is off.  Additionally, if a user clicks on the cell that has the hint in it, the hint should be accepted as the number in that cell and should be removed from the hint mode.
+  - ✅ Done: Changed from hold-to-preview to click-to-toggle. Button gets active class (depressed look). Hint stays visible until clicked again, cell clicked to accept, or Escape. Removed mousedown/mouseleave/touchstart listeners. 4 new E2E tests, updated 2 old tests.
+
+- Allow users to make errors.  If they input the wrong number that conflicts with the numbers already established, it should be marked as an error.  However, if the new number does not violate any of the board constraints, it should be allowed.  Currently, the user is not allowed to make an error.  Only flag such numbers when the user clicks the "Check" button.
+  - ✅ Done: Removed solution comparison from placeFinal — numbers are always placed. Conflict detection highlights row/col/box conflicts in amber. Mistakes counter no longer incremented on placement — only Check button flags errors against solution. 3 E2E tests added.
 
 ---
 

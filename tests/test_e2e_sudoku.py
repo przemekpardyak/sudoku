@@ -1981,5 +1981,111 @@ class TestHintButtonToggle(TestSudokuE2E):
                          "Hint button should lose active class after applying hint")
 
 
+
+
+class TestAllowUserErrors(TestSudokuE2E):
+    """Tests that users can make errors — numbers placed even if wrong."""
+
+    def test_wrong_number_still_placed(self):
+        """A number that doesn't match the solution should still be placed on the board."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Find an empty cell and click it
+        cells = self.page.query_selector_all("#board .cell")
+        empty_cell = None
+        for cell in cells:
+            text = cell.inner_text().strip()
+            if not text:
+                empty_cell = cell
+                break
+
+        self.assertIsNotNone(empty_cell, "Should have at least one empty cell")
+        empty_cell.click()
+        self.page.wait_for_timeout(200)
+
+        # Place a number (may or may not be correct)
+        self.page.click(".num-btn[data-num='1']")
+        self.page.wait_for_timeout(300)
+
+        # The cell should now have a value (not empty)
+        cell_text = empty_cell.inner_text().strip()
+        self.assertNotEqual(cell_text, "",
+                           "Wrong number should still be placed on the board")
+
+    def test_mistakes_not_incremented_on_placement(self):
+        """Mistakes counter should NOT increase when placing a wrong number."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        mistakes_before = self.page.text_content("#mistakes")
+
+        # Find an empty cell and click it
+        cells = self.page.query_selector_all("#board .cell")
+        empty_cell = None
+        for cell in cells:
+            text = cell.inner_text().strip()
+            if not text:
+                empty_cell = cell
+                break
+
+        if empty_cell:
+            empty_cell.click()
+            self.page.wait_for_timeout(200)
+            # Place a number — might be wrong but shouldn't increment mistakes
+            self.page.click(".num-btn[data-num='1']")
+            self.page.wait_for_timeout(300)
+
+        mistakes_after = self.page.text_content("#mistakes")
+        self.assertEqual(mistakes_before, mistakes_after,
+                         "Mistakes should not be incremented on placement — only Check button flags errors")
+
+    def test_conflicting_number_shows_conflict(self):
+        """Placing a number that conflicts with row/col/box should show conflict highlight."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Find a given number and its value
+        cells = self.page.query_selector_all("#board .cell")
+        given_value = None
+        given_idx = None
+        for i, cell in enumerate(cells):
+            text = cell.inner_text().strip()
+            if text and len(text) == 1 and text.isdigit():
+                given_value = int(text)
+                given_idx = i
+                break
+
+        self.assertIsNotNone(given_value, "Should have at least one given number")
+
+        # Find an empty cell in the same row
+        row = given_idx // 9
+        empty_in_row = None
+        for c in range(9):
+            idx = row * 9 + c
+            if idx != given_idx:
+                cell_text = cells[idx].inner_text().strip()
+                if not cell_text:
+                    empty_in_row = cells[idx]
+                    break
+
+        if empty_in_row:
+            empty_in_row.click()
+            self.page.wait_for_timeout(200)
+            # Place the same number as the given — should conflict
+            self.page.click(f".num-btn[data-num='{given_value}']")
+            self.page.wait_for_timeout(300)
+
+            # Check if the cell has conflict or error class
+            cell_classes = empty_in_row.get_attribute("class") or ""
+            self.assertTrue(
+                "conflict" in cell_classes or "error" in cell_classes,
+                f"Conflicting number should show conflict/error highlight, got classes: {cell_classes}"
+            )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
