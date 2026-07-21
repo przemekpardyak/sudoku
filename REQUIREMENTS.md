@@ -27,7 +27,10 @@
 <!-- Format: - [requirement text] -->
 <!--         - ✅ Done: [summary] or 🚧 In progress or ❌ Failed: [why] or ⏳ Pending -->
 
-- (waiting for first batch of requirements from user)
+- he buttons are too bunched up as a long colum on the right.  Reorganize and resize so that they are aligned with the board better.
+
+- clicking on difficulty should not immediately create a new game.  only new game should do it.
+  
 
 ---
 
