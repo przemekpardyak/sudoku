@@ -13,7 +13,7 @@ cd "$(dirname "$0")/.."
 
 PYTHON="${PYTHON:-python3}"
 VENV_DIR="venv"
-TEST_MODULES=(test_sudoku test_storage test_app test_browser_flow test_game_api test_best_times test_stats test_solver_edge_cases test_undo_redo test_validation test_concurrency test_auto_notes test_is_valid test_export_import test_timer_pause test_seeded_puzzles test_daily_puzzle test_progress test_win_detection test_hint_counter test_edge_cases test_api_format test_firestore_serialization test_storage_behavior test_games_sort test_enhanced_stats test_board_reset test_difficulty_validation test_games_filter test_validate_endpoint test_game_lifecycle test_difficulty_stats test_archive test_solve_endpoint test_hint_endpoint test_undo_redo_behavior test_api_integration test_performance test_game_tags test_stats_summary test_weekly_puzzle test_clone_game test_board_diff test_storage_merge test_game_rating test_puzzle_quality test_enhanced_stats_v2 test_game_notes test_api_consistency test_game_search test_game_session test_solver_robustness test_achievements test_full_lifecycle test_game_favorite test_api_resilience test_puzzle_schedule test_game_timeline test_error_handling test_leaderboard test_game_replay test_data_integrity test_recommend_difficulty test_stats_export test_puzzle_analysis test_game_history test_api_discovery test_game_streaks test_deployed_service test_completion_certificate test_solver_techniques test_game_progress test_batch_operations test_game_comparison test_player_profile test_cross_endpoint test_response_format test_comprehensive test_storage_boundaries test_generation_stress test_api_docs test_new_endpoint_edges test_state_transitions test_data_flow test_concurrent_safety test_session_metrics test_malformed_input test_numeric_boundaries test_export_integrity test_query_params test_regression test_health_check)
+TEST_MODULES=(tests.test_sudoku tests.test_storage tests.test_app tests.test_browser_flow tests.test_game_api tests.test_best_times tests.test_stats tests.test_solver_edge_cases tests.test_undo_redo tests.test_validation tests.test_concurrency tests.test_auto_notes tests.test_is_valid tests.test_export_import tests.test_timer_pause tests.test_seeded_puzzles tests.test_daily_puzzle tests.test_progress tests.test_win_detection tests.test_hint_counter tests.test_edge_cases tests.test_api_format tests.test_firestore_serialization tests.test_storage_behavior tests.test_games_sort tests.test_enhanced_stats tests.test_board_reset tests.test_difficulty_validation tests.test_games_filter tests.test_validate_endpoint tests.test_game_lifecycle tests.test_difficulty_stats tests.test_archive tests.test_solve_endpoint tests.test_hint_endpoint tests.test_undo_redo_behavior tests.test_api_integration tests.test_performance tests.test_game_tags tests.test_stats_summary tests.test_weekly_puzzle tests.test_clone_game tests.test_board_diff tests.test_storage_merge tests.test_game_rating tests.test_puzzle_quality tests.test_enhanced_stats_v2 tests.test_game_notes tests.test_api_consistency tests.test_game_search tests.test_game_session tests.test_solver_robustness tests.test_achievements tests.test_full_lifecycle tests.test_game_favorite tests.test_api_resilience tests.test_puzzle_schedule tests.test_game_timeline tests.test_error_handling tests.test_leaderboard tests.test_game_replay tests.test_data_integrity tests.test_recommend_difficulty tests.test_stats_export tests.test_puzzle_analysis tests.test_game_history tests.test_api_discovery tests.test_game_streaks tests.test_deployed_service tests.test_completion_certificate tests.test_solver_techniques tests.test_game_progress tests.test_batch_operations tests.test_game_comparison tests.test_player_profile tests.test_cross_endpoint tests.test_response_format tests.test_comprehensive tests.test_storage_boundaries tests.test_generation_stress tests.test_api_docs tests.test_new_endpoint_edges tests.test_state_transitions tests.test_data_flow tests.test_concurrent_safety tests.test_session_metrics tests.test_malformed_input tests.test_numeric_boundaries tests.test_export_integrity tests.test_query_params tests.test_regression tests.test_health_check)
 WATCH_MODE=false
 QUIET_FLAG="-v"
 FAIL_FAST=""
@@ -76,12 +76,12 @@ if [ "${WATCH_MODE}" = true ]; then
     echo ""
     echo "⏳ Waiting for file changes... (Ctrl+C to stop)"
     inotifywait -q -e modify -e create -e delete \
-      sudoku.py test_sudoku.py \
-      app.py test_app.py \
-      storage.py test_storage.py \
-      test_browser_flow.py test_game_api.py \
-      test_best_times.py test_stats.py \
-      test_solver_edge_cases.py \
+      sudoku.py tests/test_sudoku.py \
+      app.py tests/test_app.py \
+      storage.py tests/test_storage.py \
+      tests/test_browser_flow.py tests/test_game_api.py \
+      tests/test_best_times.py tests/test_stats.py \
+      tests/test_solver_edge_cases.py \
       requirements.txt 2>/dev/null || sleep 2
   done
 else

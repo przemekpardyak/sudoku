@@ -11,7 +11,7 @@ terraform/
 README.html
 README.md
 .DS_Store
-test_*.py
+tests/
 scripts/
 audits/
 docs/
