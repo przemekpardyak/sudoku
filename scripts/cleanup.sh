@@ -85,6 +85,23 @@ IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${APP_NAME}-repo/${APP_NAME}"
 DELETED=()
 SKIPPED=()
 
+# --- Phase 0: Delete Firestore database (before terraform disables the API) ---
+echo
+echo "▶ Phase 0: Deleting Firestore database (before terraform destroy)..."
+# Firestore databases survive terraform destroy because terraform only disables
+# the API, it doesn't delete the database itself. We must delete it here while
+# the API is still enabled, otherwise the next deploy will fail with 409.
+if gcloud firestore databases list --project="${PROJECT_ID}" 2>/dev/null | grep -q "(default)"; then
+  echo "  → Deleting Firestore database..."
+  gcloud firestore databases delete --database="(default)" --project="${PROJECT_ID}" --quiet 2>/dev/null || {
+    echo "  ⚠ Firestore database deletion may have failed (it can take several minutes)."
+    echo "    You may need to delete it manually in the console."
+  }
+  DELETED+=("Firestore database (default)")
+else
+  SKIPPED+=("Firestore database (not found or API disabled)")
+fi
+
 # --- Phase 1: Terraform destroy (Cloud Run, IAM, AR repo, APIs) ----------------
 echo
 echo "▶ Phase 1: Terraform destroy (Cloud Run service, IAM, Artifact Registry, APIs)..."
@@ -195,23 +212,6 @@ echo "▶ Phase 7: API cleanup..."
 echo "  ⓪ Terraform uses disable_on_destroy=true, so APIs are disabled during"
 echo "     terraform destroy in Phase 1. No manual API cleanup needed."
 SKIPPED+=("Manual API disablement (handled by Terraform destroy)")
-
-# --- Phase 8: Delete Firestore database (if exists) ---------------------------
-echo
-echo "▶ Phase 8: Deleting Firestore database (if exists)..."
-# Firestore databases can be deleted via gcloud. The "(default)" database
-# is created by Terraform (firestore.tf). We delete it here in case
-# Terraform destroy didn't clean it up (Firestore deletion can be slow).
-if gcloud firestore databases list --project="${PROJECT_ID}" 2>/dev/null | grep -q "(default)"; then
-  echo "  → Deleting Firestore database..."
-  gcloud firestore databases delete --project="${PROJECT_ID}" --quiet 2>/dev/null || {
-    echo "  ⚠ Firestore database deletion may have failed (it can take several minutes)."
-    echo "    You may need to delete it manually in the console."
-  }
-  DELETED+=("Firestore database (default)")
-else
-  SKIPPED+=("Firestore database (not found)")
-fi
 
 # --- Summary -----------------------------------------------------------------
 echo

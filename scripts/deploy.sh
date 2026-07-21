@@ -41,12 +41,12 @@ command -v terraform >/dev/null || { echo "✗ terraform not found. Install: htt
 
 # Ensure authenticated.
 if ! gcloud auth print-access-token >/dev/null 2>&1; then
-  echo "→ Not logged in. Running: gcloud auth login"
-  gcloud auth login
+  echo "→ Not logged in. Running: gcloud auth login --no-launch-browser"
+  gcloud auth login --no-launch-browser --quiet
 fi
 if ! gcloud auth application-default print-access-token >/dev/null 2>&1; then
-  echo "→ Application default credentials missing. Running: gcloud auth application-default login"
-  gcloud auth application-default login
+  echo "→ Application default credentials missing. Running: gcloud auth application-default login --no-launch-browser"
+  gcloud auth application-default login --no-launch-browser --quiet
 fi
 
 # NOTE: We intentionally do NOT call `gcloud config set project` here because it

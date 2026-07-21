@@ -320,7 +320,7 @@ venv/bin/python3 -m playwright install chromium
 venv/bin/python3 -m unittest tests.test_e2e_sudoku -v
 ```
 
-**What the E2E tests cover (73 tests across 20 suites):**
+**What the E2E tests cover (80 tests across 27 suites):**
 
 | Suite | Tests | Coverage |
 |-------|-------|----------|
