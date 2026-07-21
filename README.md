@@ -12,26 +12,41 @@ Generate fresh puzzles, play in your browser, and track your time and mistakes.
 ### Core Gameplay
 - **Procedural Puzzle Generation** — every game produces a unique, solvable Sudoku via a backtracking algorithm
 - **4 Difficulty Levels** — Easy, Medium, Hard, Expert (30–58 empty cells)
+- **Daily Puzzle** — a special puzzle seeded by today's date, the same for everyone each day
+- **Seeded Puzzles** — pass a `seed` parameter to generate reproducible puzzles for competitive play
 - **Smart Highlighting** — selecting a cell highlights its row, column, 3×3 box, and all matching numbers
 - **Real-time Validation** — incorrect entries are flagged instantly in red
 - **Mistake Tracker** — keeps count of wrong placements
 - **Check Button** — scan the entire board for errors at any time
+- **Auto-Notes** — click **✏️ Auto-Notes** (or press `A`) to automatically fill in all possible pencil marks for empty cells
+- **Solve Button** — click **✅ Solve** to reveal the solution and end the current game
+- **Conflict Highlighting** — cells with duplicate numbers in the same row, column, or 3×3 box are highlighted in amber
 - **3×3 Box Dividers** — clear visual grid lines separating the nine 3×3 boxes
 - **Built-in Timer** — tracks elapsed time; win screen shows your final stats
+- **Pause/Resume** — press `Space` or click the Pause button to pause the timer; paused state is saved
 - **Modern UI** — dark glassmorphism theme, gradient accents, smooth micro-animations
+- **Theme Toggle** — switch between dark and light themes; preference is saved in localStorage (`T` shortcut)
 
 ### Game Persistence
 - **Auto-Save** — game state is automatically saved every 2 seconds after any change (debounced). Survives browser restarts and backend restarts.
 - **Full State Saved** — saves the board, pencil marks, given cells, mistakes, elapsed time, difficulty, undo/redo stacks, and completion status
 - **Resume Last Game** — when you reopen the page, your last game is automatically restored so you can pick up where you left off
-- **Game List** — click **📂 Load Games** to see all saved games with metadata (difficulty, progress, mistakes, time, last played). Resume any game or delete old ones.
+- **Game List** — click **📂 Load Games** to see all saved games with metadata (difficulty, progress, mistakes, time, last played). Resume any game or delete old ones. Completed games show ✅.
+- **Clear All** — delete all saved games at once from the Load Games modal
+- **Best Times** — tracks the best completion time per difficulty level; shown in the win modal with "🏆 New best time!" when you beat your record
+- **Player Statistics** — `GET /api/stats` provides aggregate stats: total games, completion rate, total time, total mistakes, average completion time
 - **Server-Side Storage** — uses **Google Cloud Firestore** in production (survives container restarts), falls back to in-memory storage for local development
+- **beforeunload Save** — game state is saved via `navigator.sendBeacon()` before the page unloads
+- **Game Sharing** — export any saved game as a shareable link; visiting the link imports the game automatically
 
 ### Pencil Marks (Notes)
 - Toggle between **Final** (✏️) and **Notes** (📝) mode using the buttons in the right panel, or press `N`
 - In **Notes mode**, clicking a number (1–9) toggles a small pencil mark in the selected cell's 3×3 mini-grid
 - In **Final mode**, clicking a number places the big number. This hides the cell's pencil marks and auto-removes that same digit from pencil marks in the same row, column, and 3×3 box
 - Erasing a final number reveals the preserved pencil marks again
+- **Auto-Notes** — click the button to auto-fill all possible pencil marks
+- **Clear Notes** — click to erase all pencil marks from the board
+- **Reset Board** — click to clear all user-placed numbers and start fresh from the original puzzle
 
 ### Smart Numpad
 - Number pad buttons **auto-disable** when all 9 instances of a digit have been placed on the board
@@ -721,6 +736,13 @@ terraform destroy \
 | `Ctrl+Z`          | Undo last action                |
 | `Ctrl+Y` or `Ctrl+Shift+Z` | Redo last undone action  |
 | `Escape`          | Dismiss hint preview            |
+| `L`               | Open the Load Games modal       |
+| `A`               | Auto-fill pencil marks          |
+| `D`               | Play today's daily puzzle       |
+| `R`               | Reset board to original puzzle  |
+| `T`               | Toggle dark/light theme         |
+| `?`               | Show keyboard shortcuts help     |
+| `Space`            | Pause/Resume timer               |
 | `↑` `↓` `←` `→`   | Move the selection between cells |
 
 ---
@@ -731,25 +753,43 @@ terraform destroy \
 
 Returns the main HTML game page.
 
-### `GET /api/new-game?difficulty=<int>`
+### `GET /api/new-game?difficulty=<int>&seed=<string>`
 
 Generates a new Sudoku puzzle and its solution.
 
-| Parameter     | Type | Default | Description                                   |
-|---------------|------|---------|-----------------------------------------------|
-| `difficulty`  | int  | `40`    | Number of cells to remove (30–58 recommended) |
+| Parameter     | Type   | Default | Description                                   |
+|---------------|--------|---------|-----------------------------------------------|
+| `difficulty`  | int    | `40`    | Number of cells to remove (30–58 recommended) |
+| `seed`        | string | (none)  | Optional seed for reproducible puzzle generation |
 
 **Response:**
 
 ```json
 {
   "puzzle": [[6, 0, 1, ...], ...],
-  "solution": [[6, 9, 1, ...], ...]
+  "solution": [[6, 9, 1, ...], ...],
+  "seed": "myseed"
 }
 ```
 
 - `puzzle`: 9×9 grid where `0` represents an empty cell
 - `solution`: 9×9 grid with the complete, solved board
+- `seed`: The seed used (or `null` if none was provided)
+
+### `GET /api/daily-puzzle`
+
+Returns today's daily puzzle — the same puzzle for all users on the same date. Medium difficulty (40 empty cells).
+
+**Response:**
+
+```json
+{
+  "puzzle": [[6, 0, 1, ...], ...],
+  "solution": [[6, 9, 1, ...], ...],
+  "date": "2026-07-21",
+  "seed": "daily-2026-07-21"
+}
+```
 
 ### `GET /api/games?limit=<int>`
 
@@ -809,6 +849,134 @@ Updates a saved game's full state (auto-save calls this).
 Deletes a saved game.
 
 **Response:** `{ "ok": true, "deleted": "..." }`, or `404` if not found.
+
+### `DELETE /api/games`
+
+Deletes all saved games.
+
+**Response:** `{ "ok": true, "deleted_count": 5 }`
+
+### `GET /api/games/<game_id>/export`
+
+Exports a game as a shareable base64-encoded code.
+
+**Response:** `{ "share_code": "eyJkaWZmaWN1bHR5Ijog..." }`
+
+### `POST /api/games/import`
+
+Imports a game from a shareable base64-encoded code and creates a new game.
+
+**Request:** `{ "share_code": "eyJkaWZmaWN1bHR5Ijog..." }`
+
+**Response:** `{ "game_id": "..." }`, status `201`
+
+### `POST /api/validate`
+
+Validates a 9×9 Sudoku board state. Checks for row, column, and 3×3 box conflicts, completion status, and solution uniqueness.
+
+**Request:** `{ "board": [[5,3,4,...], ...] }` — a 9×9 array (0 = empty)
+
+**Response:**
+
+```json
+{
+  "valid": true,
+  "complete": false,
+  "filled": 50,
+  "empty": 31,
+  "conflicts": [],
+  "unique_solution": true
+}
+```
+
+- `valid`: `true` if no row/column/box conflicts
+- `complete`: `true` if all 81 cells filled and valid
+- `conflicts`: list of `[row, col]` pairs with conflicts
+- `unique_solution`: `true` if the partial board has exactly one solution (`null` for full/empty boards)
+
+### `POST /api/solve`
+
+Solves a 9×9 Sudoku board.
+
+**Request:** `{ "board": [[5,3,4,...], ...] }` — a 9×9 array (0 = empty)
+
+**Response:**
+
+```json
+{
+  "solved": [[5,3,4,6,7,8,9,1,2], ...],
+  "unique": true,
+  "num_solutions": 1
+}
+```
+
+Returns `400` if the board has conflicts or no solution.
+
+### `POST /api/hint`
+
+Finds the next logical move for a Sudoku board using solving techniques (naked single, hidden single, backtracking).
+
+**Request:** `{ "board": [[5,3,4,...], ...] }` — a 9×9 array (0 = empty)
+
+**Response:**
+
+```json
+{
+  "row": 0,
+  "col": 4,
+  "value": 7,
+  "technique": "naked_single"
+}
+```
+
+- `technique`: one of `naked_single`, `hidden_single_row`, `hidden_single_column`, `hidden_single_box`, `backtracking`
+- Returns `200` with `{"message": "Board is already complete"}` if no empty cells
+
+### `PUT /api/games/<game_id>/archive`
+
+Archive or unarchive a game without deleting it.
+
+**Request:** `{ "archived": true }` (or `false` to unarchive)
+
+**Response:** `{ "ok": true, "game_id": "...", "archived": true }`
+
+Archived games remain accessible but can be filtered out in the UI.
+
+### `GET /api/best-times`
+
+Returns the best completion time per difficulty level.
+
+**Response:**
+
+```json
+{
+  "30": 120,
+  "40": 300,
+  "50": 600
+}
+```
+
+Only completed games are counted. Keys are difficulty levels (as strings), values are the best (lowest) time in seconds.
+
+### `GET /api/stats`
+
+Returns aggregate player statistics across all saved games.
+
+**Response:**
+
+```json
+{
+  "total_games": 15,
+  "completed_games": 3,
+  "completion_rate": 0.2,
+  "total_time": 4500,
+  "total_mistakes": 28,
+  "total_hints": 12,
+  "avg_completion_time": 250.0,
+  "best_time": 120,
+  "avg_mistakes": 9.3
+}
+```
 
 ---
 

@@ -257,5 +257,120 @@ class TestFirestoreStorage(unittest.TestCase):
         self.assertFalse(result)
 
 
+class TestFirestoreSerialization(unittest.TestCase):
+    """Tests for Firestore array serialization/deserialization.
+
+    These test the _serialize and _deserialize class methods directly,
+    so they don't need google-cloud-firestore to be installed.
+    """
+
+    def setUp(self):
+        self.state = {
+            "puzzle": [[5, 0, 1, 0, 0, 0, 0, 0, 0],
+                       [0, 3, 0, 0, 0, 0, 0, 0, 0],
+                       [0, 0, 9, 0, 0, 0, 0, 0, 0]] + [[0] * 9] * 6,
+            "solution": [[5, 7, 1, 2, 4, 3, 6, 8, 9],
+                         [8, 3, 2, 5, 7, 9, 1, 4, 6],
+                         [4, 6, 9, 1, 2, 8, 3, 5, 7]] + [[1] * 9] * 6,
+            "board": [[5, 0, 1, 0, 0, 0, 0, 0, 0],
+                      [0, 3, 0, 0, 0, 0, 0, 0, 0],
+                      [0, 0, 9, 0, 0, 0, 0, 0, 0]] + [[0] * 9] * 6,
+            "given": [[True, False, True, False, False, False, False, False, False],
+                      [False, True, False, False, False, False, False, False, False],
+                      [False, False, True, False, False, False, False, False, False]] + [[False] * 9] * 6,
+            "notes": [[[False] * 9 for _ in range(9)] for _ in range(9)],
+            "undoStack": [
+                {
+                    "board": [[5, 0, 1] + [0] * 6] + [[0] * 9] * 8,
+                    "notes": [[[False] * 9] * 9] * 9,
+                    "given": [[True, False, True] + [False] * 6] + [[False] * 9] * 8,
+                    "mistakes": 0,
+                }
+            ],
+            "redoStack": [],
+            "mistakes": 2,
+            "elapsed": 150,
+            "difficulty": 40,
+            "completed": False,
+        }
+
+    def test_serialize_converts_arrays_to_strings(self):
+        serialized = FirestoreStorage._serialize(self.state)
+        for key in FirestoreStorage._ARRAY_FIELDS:
+            self.assertIsInstance(serialized[key], str, f"{key} should be a string after serialization")
+
+    def test_deserialize_converts_strings_back_to_arrays(self):
+        serialized = FirestoreStorage._serialize(self.state)
+        deserialized = FirestoreStorage._deserialize(serialized)
+        for key in FirestoreStorage._ARRAY_FIELDS:
+            self.assertIsInstance(deserialized[key], list, f"{key} should be a list after deserialization")
+
+    def test_roundtrip_preserves_data(self):
+        """Serialize then deserialize should produce identical data."""
+        serialized = FirestoreStorage._serialize(self.state)
+        deserialized = FirestoreStorage._deserialize(serialized)
+        for key in self.state:
+            self.assertEqual(deserialized[key], self.state[key], f"{key} mismatch in roundtrip")
+
+    def test_serialize_preserves_non_array_fields(self):
+        """Non-array fields like mistakes, elapsed should not be converted."""
+        serialized = FirestoreStorage._serialize(self.state)
+        self.assertEqual(serialized["mistakes"], 2)
+        self.assertEqual(serialized["elapsed"], 150)
+        self.assertEqual(serialized["difficulty"], 40)
+        self.assertEqual(serialized["completed"], False)
+
+    def test_deserialize_handles_missing_fields(self):
+        """Deserializing data without array fields should not crash."""
+        data = {"mistakes": 5, "elapsed": 30}
+        result = FirestoreStorage._deserialize(data)
+        self.assertEqual(result["mistakes"], 5)
+
+    def test_deserialize_handles_non_string_arrays(self):
+        """If a field is already a list (not a string), deserialization should leave it."""
+        data = {"puzzle": [[1, 2, 3]], "mistakes": 0}
+        result = FirestoreStorage._deserialize(data)
+        self.assertEqual(result["puzzle"], [[1, 2, 3]])
+
+    def test_serialize_does_not_mutate_input(self):
+        """Serialization should not modify the original state."""
+        original_puzzle = self.state["puzzle"]
+        FirestoreStorage._serialize(self.state)
+        self.assertIs(self.state["puzzle"], original_puzzle)
+        self.assertIsInstance(self.state["puzzle"], list)
+
+    def test_serialize_empty_state(self):
+        """Serializing an empty dict should work."""
+        result = FirestoreStorage._serialize({})
+        self.assertEqual(result, {})
+
+    def test_serialize_with_notes_nested_3_levels(self):
+        """Notes are 3D arrays (9x9x9) — ensure they serialize correctly."""
+        state = {"notes": [[[True, False] + [False] * 7] * 9] * 9}
+        serialized = FirestoreStorage._serialize(state)
+        self.assertIsInstance(serialized["notes"], str)
+        deserialized = FirestoreStorage._deserialize(serialized)
+        self.assertTrue(deserialized["notes"][0][0][0])
+        self.assertFalse(deserialized["notes"][0][0][1])
+
+    def test_serialize_with_undo_stack_containing_nested_arrays(self):
+        """Undo stack entries contain nested board/notes arrays."""
+        state = {
+            "undoStack": [
+                {
+                    "board": [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+                    "notes": [[[False] * 9] * 9] * 9,
+                    "given": [[True] * 9] * 9,
+                    "mistakes": 3,
+                }
+            ]
+        }
+        serialized = FirestoreStorage._serialize(state)
+        self.assertIsInstance(serialized["undoStack"], str)
+        deserialized = FirestoreStorage._deserialize(serialized)
+        self.assertEqual(deserialized["undoStack"][0]["board"], [[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        self.assertEqual(deserialized["undoStack"][0]["mistakes"], 3)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

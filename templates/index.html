@@ -20,6 +20,7 @@
           <p>Beautifully simple. Infinitely replayable.</p>
         </div>
       </div>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme (T)">🌙</button>
       <div class="stats">
         <div class="stat">
           <span class="stat-label">Time</span>
@@ -28,6 +29,14 @@
         <div class="stat">
           <span class="stat-label">Mistakes</span>
           <span class="stat-value" id="mistakes">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Level</span>
+          <span class="stat-value" id="difficultyLabel">Medium</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Progress</span>
+          <span class="stat-value" id="progressLabel">0%</span>
         </div>
       </div>
     </header>
@@ -77,13 +86,20 @@
 
         <section class="actions">
           <button class="action-btn primary" id="newGameBtn">New Game</button>
+          <button class="action-btn" id="dailyBtn" title="Play today's daily puzzle">📅 Daily</button>
+          <button class="action-btn" id="pauseBtn" title="Pause/Resume timer (Space)">⏸ Pause</button>
           <div class="undo-redo">
             <button class="action-btn" id="undoBtn" title="Undo (Ctrl+Z)">↶ Undo</button>
             <button class="action-btn" id="redoBtn" title="Redo (Ctrl+Y)">↷ Redo</button>
           </div>
           <button class="action-btn" id="checkBtn">Check</button>
+          <button class="action-btn" id="autoNotesBtn" title="Fill pencil marks for all possible numbers">✏️ Auto-Notes</button>
+          <button class="action-btn" id="clearNotesBtn" title="Clear all pencil marks">📝 Clear Notes</button>
+          <button class="action-btn" id="resetBoardBtn" title="Reset board to original puzzle">🔄 Reset Board</button>
+          <button class="action-btn" id="solveBtn" title="Show the solution">✅ Solve</button>
           <button class="action-btn hint-hold" id="hintBtn">Hint</button>
           <button class="action-btn" id="loadGamesBtn">📂 Load Games</button>
+          <button class="action-btn" id="helpBtn" title="Keyboard shortcuts (?)">❓ Help</button>
         </section>
 
         <p class="hint-text" id="hintText"></p>
@@ -92,7 +108,33 @@
 
     <footer class="footer">
       <span>Built with Flask · Click a cell, then pick a number</span>
+      <span id="gameIdDisplay" class="game-id-display"></span>
     </footer>
+  </div>
+
+  <div class="overlay" id="helpOverlay">
+    <div class="modal">
+      <h2>⌨️ Keyboard Shortcuts</h2>
+      <div class="help-shortcuts">
+        <table>
+          <tr><td><kbd>1</kbd>–<kbd>9</kbd></td><td>Place number</td></tr>
+          <tr><td><kbd>0</kbd> / <kbd>Del</kbd></td><td>Erase cell</td></tr>
+          <tr><td><kbd>N</kbd></td><td>Toggle Final/Notes mode</td></tr>
+          <tr><td><kbd>Ctrl+Z</kbd></td><td>Undo</td></tr>
+          <tr><td><kbd>Ctrl+Y</kbd></td><td>Redo</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Dismiss hint</td></tr>
+          <tr><td><kbd>L</kbd></td><td>Load Games</td></tr>
+          <tr><td><kbd>A</kbd></td><td>Auto-Notes</td></tr>
+          <tr><td><kbd>D</kbd></td><td>Daily puzzle</td></tr>
+          <tr><td><kbd>R</kbd></td><td>Reset board</td></tr>
+          <tr><td><kbd>T</kbd></td><td>Toggle theme</td></tr>
+          <tr><td><kbd>Space</kbd></td><td>Pause/Resume</td></tr>
+          <tr><td><kbd>?</kbd></td><td>This help</td></tr>
+          <tr><td><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd></td><td>Move selection</td></tr>
+        </table>
+      </div>
+      <button class="action-btn primary" id="helpClose">Got it!</button>
+    </div>
   </div>
 
   <div class="overlay" id="overlay">
@@ -106,7 +148,20 @@
   <div class="overlay" id="gamesOverlay">
     <div class="modal modal-wide">
       <h2>📂 Saved Games</h2>
+      <div id="gamesStatsSummary" class="stats-summary" style="display:none;"></div>
       <p id="gamesEmpty" style="display:none; color: var(--text-dim);">No saved games yet. Start playing and your progress is saved automatically!</p>
+      <div class="games-sort">
+        <label>Sort by:</label>
+        <select id="gamesSort">
+          <option value="updated">Last Played</option>
+          <option value="elapsed">Time</option>
+          <option value="difficulty">Difficulty</option>
+          <option value="mistakes">Mistakes</option>
+          <option value="progress">Progress</option>
+        </select>
+        <label class="filter-label"><input type="checkbox" id="filterCompleted" checked> Completed</label>
+        <label class="filter-label"><input type="checkbox" id="filterInProgress" checked> In Progress</label>
+      </div>
       <div class="games-list" id="gamesList">
         <table>
           <thead>
@@ -114,6 +169,7 @@
               <th>Difficulty</th>
               <th>Progress</th>
               <th>Mistakes</th>
+              <th>Hints</th>
               <th>Time</th>
               <th>Last Played</th>
               <th>Actions</th>
@@ -123,6 +179,7 @@
         </table>
       </div>
       <div class="modal-actions">
+        <button class="action-btn danger" id="clearAllGamesBtn">🗑 Clear All</button>
         <button class="action-btn" id="closeGamesBtn">Close</button>
       </div>
     </div>

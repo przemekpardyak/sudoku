@@ -10,6 +10,7 @@ Environment variables:
 """
 from __future__ import annotations
 
+import json
 import os
 import time
 import uuid
@@ -114,11 +115,27 @@ class InMemoryStorage(GameStorage):
             "created_at": game.get("created_at"),
             "updated_at": game.get("updated_at"),
             "progress": f"{solved}/{total_empty}" if total_empty > 0 else "—",
+            "hintsUsed": game.get("hintsUsed", 0),
+            "archived": game.get("archived", False),
+            "tags": game.get("tags", []),
+            "rating": game.get("rating", 0),
+            "notes": game.get("notes", ""),
+            "favorite": game.get("favorite", False),
         }
 
 
 class FirestoreStorage(GameStorage):
-    """Firestore-backed game storage for production."""
+    """Firestore-backed game storage for production.
+
+    Firestore does not allow nested arrays (e.g. board[r][c]).
+    We serialize array fields as JSON strings before writing,
+    and deserialize them when reading.
+    """
+
+    _ARRAY_FIELDS = frozenset({
+        "puzzle", "solution", "board", "given", "notes",
+        "undoStack", "redoStack",
+    })
 
     def __init__(self, project_id: str, collection: str = "games") -> None:
         if not _FIRESTORE_AVAILABLE:
@@ -129,9 +146,32 @@ class FirestoreStorage(GameStorage):
         self._db = firestore_module.Client(project=project_id)
         self._collection = self._db.collection(collection)
 
+    @classmethod
+    def _serialize(cls, state: dict[str, Any]) -> dict[str, Any]:
+        """Convert nested-array fields to JSON strings for Firestore."""
+        out = dict(state)
+        for key in cls._ARRAY_FIELDS:
+            if key in out:
+                out[key] = json.dumps(out[key])
+        return out
+
+    @classmethod
+    def _deserialize(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """Convert JSON-string fields back to nested arrays."""
+        if not data:
+            return data
+        out = dict(data)
+        for key in cls._ARRAY_FIELDS:
+            if key in out and isinstance(out[key], str):
+                try:
+                    out[key] = json.loads(out[key])
+                except (json.JSONDecodeError, TypeError):
+                    pass  # leave as-is if not valid JSON
+        return out
+
     def create_game(self, state: dict[str, Any]) -> str:
         game_id = str(uuid.uuid4())
-        state = dict(state)
+        state = self._serialize(state)
         state["game_id"] = game_id
         state["created_at"] = _now_iso()
         state["updated_at"] = state["created_at"]
@@ -144,11 +184,12 @@ class FirestoreStorage(GameStorage):
             return None
         data = doc.to_dict()
         if data:
+            data = self._deserialize(data)
             data["game_id"] = game_id
         return data
 
     def save_game(self, game_id: str, state: dict[str, Any]) -> None:
-        state = dict(state)
+        state = self._serialize(state)
         state["updated_at"] = _now_iso()
         self._collection.document(game_id).set(state, merge=True)
 
@@ -162,6 +203,7 @@ class FirestoreStorage(GameStorage):
         for doc in docs:
             data = doc.to_dict()
             if data:
+                data = self._deserialize(data)
                 data["game_id"] = doc.id
                 games.append(InMemoryStorage._summarize(data))
         return games
