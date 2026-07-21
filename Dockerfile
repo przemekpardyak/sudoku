@@ -9,7 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt gunicorn==21.2.0
 
 # Copy application code. Be selective so the image stays lean.
-COPY app.py sudoku.py storage.py ./
+COPY app.py sudoku.py storage.py auth.py ./
 COPY static/ ./static/
 COPY templates/ ./templates/
 
