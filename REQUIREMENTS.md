@@ -10,13 +10,13 @@
 
 | Field | Value |
 |-------|-------|
-| **Last deployed** | 2026-07-21 22:39 UTC |
-| **Revision** | sudoku-00007-hvr |
+| **Last deployed** | 2026-07-21 23:24 UTC |
+| **Revision** | sudoku-00008-nt4 |
 | **URL** | https://sudoku-d5mqgioeaa-uc.a.run.app |
 | **Proxy** | `gcloud run services proxy sudoku --region=us-central1 --project=ppardyak-cad --port=8080` |
 | **Local dev** | `http://localhost:5000` (venv/bin/python3 app.py) |
-| **Tests** | 1021 total (888 API + 133 E2E), 1 skipped |
-| **Git HEAD** | 61c5082 |
+| **Tests** | 991 total (888 API + 103 E2E), 1 skipped |
+| **Git HEAD** | cd340f2 |
 
 ---
 
