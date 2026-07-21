@@ -10,13 +10,13 @@
 
 | Field | Value |
 |-------|-------|
-| **Last deployed** | (pending) |
-| **Revision** | (pending) |
+| **Last deployed** | 2026-07-21 21:24 UTC |
+| **Revision** | sudoku-00003-fxr |
 | **URL** | https://sudoku-d5mqgioeaa-uc.a.run.app |
 | **Proxy** | `gcloud run services proxy sudoku --region=us-central1 --project=ppardyak-cad --port=8080` |
 | **Local dev** | `http://localhost:5000` (venv/bin/python3 app.py) |
-| **Tests** | 968 total (888 API + 80 E2E), 1 skipped |
-| **Git HEAD** | (pending) |
+| **Tests** | 973 total (888 API + 85 E2E), 1 skipped |
+| **Git HEAD** | 7f20f67 |
 
 ---
 
