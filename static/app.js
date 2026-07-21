@@ -409,9 +409,9 @@
       renderBoard();
       resetTimer();
       startTimer();
-      flashHint('');
-      // Create game record on server
+      // Create game record on server immediately (not debounced)
       await createGameOnServer();
+      flashHint('New game started — saved!');
     } catch (err) {
       flashHint('Failed to load puzzle.');
     }
@@ -510,11 +510,15 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(state),
       });
+      if (!res.ok) {
+        console.error('Failed to create game on server:', res.status);
+        return;
+      }
       const data = await res.json();
       currentGameId = data.game_id;
       saveToLocalStorage();
     } catch (err) {
-      // Server may be unavailable; game still works locally
+      console.error('createGameOnServer error:', err);
     }
   }
 

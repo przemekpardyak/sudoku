@@ -97,11 +97,14 @@ class InMemoryStorage(GameStorage):
         puzzle = game.get("puzzle", [])
         # Count filled and total cells, handling non-9x9 boards gracefully
         filled = 0
-        total = 0
+        total_empty = 0
+        given_count = 0
         if board and len(board) == 9 and all(len(r) == 9 for r in board):
             filled = sum(1 for r in range(9) for c in range(9) if board[r][c] != 0)
         if puzzle and len(puzzle) == 9 and all(len(r) == 9 for r in puzzle):
-            total = sum(1 for r in range(9) for c in range(9) if puzzle[r][c] == 0)
+            given_count = sum(1 for r in range(9) for c in range(9) if puzzle[r][c] != 0)
+            total_empty = sum(1 for r in range(9) for c in range(9) if puzzle[r][c] == 0)
+        solved = filled - given_count  # cells the user has filled beyond the givens
         return {
             "game_id": game.get("game_id"),
             "difficulty": game.get("difficulty"),
@@ -110,7 +113,7 @@ class InMemoryStorage(GameStorage):
             "completed": game.get("completed", False),
             "created_at": game.get("created_at"),
             "updated_at": game.get("updated_at"),
-            "progress": f"{filled}/{total}" if total > 0 else "0/0",
+            "progress": f"{solved}/{total_empty}" if total_empty > 0 else "—",
         }
 
 
