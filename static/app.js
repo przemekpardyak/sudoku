@@ -19,6 +19,9 @@
   let given = [];
   // notes[r][c] = array of 9 booleans (index 0 = digit 1)
   let notes = [];
+  // autoNotesMask[r][c][n-1] = true if note was auto-generated (not user-entered)
+  let autoNotesMask = [];
+  let autoNotesActive = false;
   let selected = null;
   let mistakes = 0;
   let timerInterval = null;
@@ -318,6 +321,8 @@
   function toggleNote(r, c, num) {
     const idx = num - 1;
     notes[r][c][idx] = !notes[r][c][idx];
+    // User-toggled notes are never auto-generated
+    autoNotesMask[r][c][idx] = false;
     renderCellContent(r, c, getCell(r, c));
   }
 
@@ -502,36 +507,71 @@
   }
 
   function autoNotes() {
-    pushHistory();
-    let count = 0;
-    for (let r = 0; r < 9; r++) {
-      for (let c = 0; c < 9; c++) {
-        if (board[r][c] !== 0 || given[r][c]) continue;
-        for (let n = 1; n <= 9; n++) {
-          let possible = true;
-          // Check row
-          for (let i = 0; i < 9; i++) {
-            if (board[r][i] === n || board[i][c] === n) { possible = false; break; }
+    if (autoNotesActive) {
+      // Turn OFF: clear only auto-generated notes, preserve user-entered
+      pushHistory();
+      let cleared = 0;
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          for (let n = 1; n <= 9; n++) {
+            if (autoNotesMask[r][c][n - 1] && notes[r][c][n - 1]) {
+              notes[r][c][n - 1] = false;
+              cleared++;
+            }
+            autoNotesMask[r][c][n - 1] = false;
           }
-          // Check box
-          if (possible) {
-            const br = Math.floor(r / 3) * 3;
-            const bc = Math.floor(c / 3) * 3;
-            for (let r2 = br; r2 < br + 3 && possible; r2++) {
-              for (let c2 = bc; c2 < bc + 3 && possible; c2++) {
-                if (board[r2][c2] === n) possible = false;
+          renderCellContent(r, c, getCell(r, c));
+        }
+      }
+      autoNotesActive = false;
+      document.getElementById('autoNotesBtn').classList.remove('active');
+      applyHighlights();
+      scheduleAutoSave();
+      flashHint(cleared > 0 ? `Cleared ${cleared} auto pencil marks. User notes preserved.` : 'No auto notes to clear.');
+    } else {
+      // Turn ON: fill all possible notes, mark them in autoNotesMask
+      pushHistory();
+      let count = 0;
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          if (board[r][c] !== 0 || given[r][c]) continue;
+          for (let n = 1; n <= 9; n++) {
+            let possible = true;
+            // Check row
+            for (let i = 0; i < 9; i++) {
+              if (board[r][i] === n || board[i][c] === n) { possible = false; break; }
+            }
+            // Check box
+            if (possible) {
+              const br = Math.floor(r / 3) * 3;
+              const bc = Math.floor(c / 3) * 3;
+              for (let r2 = br; r2 < br + 3 && possible; r2++) {
+                for (let c2 = bc; c2 < bc + 3 && possible; c2++) {
+                  if (board[r2][c2] === n) possible = false;
+                }
               }
             }
+            // Only set as auto if user hasn't already set this note
+            if (possible && !notes[r][c][n - 1]) {
+              notes[r][c][n - 1] = true;
+              autoNotesMask[r][c][n - 1] = true;
+              count++;
+            } else if (possible && notes[r][c][n - 1]) {
+              // User already had this note — don't mark as auto
+              autoNotesMask[r][c][n - 1] = false;
+            } else {
+              autoNotesMask[r][c][n - 1] = false;
+            }
           }
-          notes[r][c][n - 1] = possible;
-          if (possible) count++;
+          renderCellContent(r, c, getCell(r, c));
         }
-        renderCellContent(r, c, getCell(r, c));
       }
+      autoNotesActive = true;
+      document.getElementById('autoNotesBtn').classList.add('active');
+      applyHighlights();
+      scheduleAutoSave();
+      flashHint(count > 0 ? `Filled ${count} pencil marks.` : 'No empty cells to fill.');
     }
-    applyHighlights();
-    scheduleAutoSave();
-    flashHint(count > 0 ? `Filled ${count} pencil marks.` : 'No empty cells to fill.');
   }
 
   function solvePuzzle() {
@@ -563,6 +603,7 @@
       for (let c = 0; c < 9; c++) {
         if (notes[r][c].some((m) => m)) count++;
         notes[r][c] = [false, false, false, false, false, false, false, false, false];
+        autoNotesMask[r][c] = [false, false, false, false, false, false, false, false, false];
         renderCellContent(r, c, getCell(r, c));
       }
     }
@@ -594,6 +635,7 @@
           resetCount++;
         }
         notes[r][c] = [false, false, false, false, false, false, false, false, false];
+        autoNotesMask[r][c] = [false, false, false, false, false, false, false, false, false];
         renderCellContent(r, c, getCell(r, c));
       }
     }
@@ -628,6 +670,9 @@
       board = puzzle.map((row) => [...row]);
       given = puzzle.map((row) => row.map((v) => v !== 0));
       notes = emptyNotes();
+      autoNotesMask = emptyNotes();
+      autoNotesActive = false;
+      document.getElementById('autoNotesBtn').classList.remove('active');
       selected = null;
       renderBoard();
       resetTimer();
@@ -855,6 +900,9 @@
     board = state.board;
     given = state.given;
     notes = state.notes;
+    autoNotesMask = emptyNotes();
+    autoNotesActive = false;
+    document.getElementById('autoNotesBtn').classList.remove('active');
     mistakes = state.mistakes || 0;
     elapsed = state.elapsed || 0;
     difficulty = state.difficulty || 40;

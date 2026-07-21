@@ -1782,5 +1782,104 @@ class TestDifficultySelectionOnly(TestSudokuE2E):
         self.assertEqual(label, "Hard")
 
 
+
+
+class TestAutoNotesToggle(TestSudokuE2E):
+    """Tests that auto-notes toggles on/off, preserving user notes."""
+
+    def test_auto_notes_button_toggles_active_class(self):
+        """Auto-Notes button should get active class when toggled on."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        btn = self.page.query_selector("#autoNotesBtn")
+        self.assertFalse(btn.get_attribute("class") and "active" in btn.get_attribute("class"),
+                        "Auto-Notes should start inactive")
+
+        btn.click()
+        self.page.wait_for_timeout(500)
+        self.assertTrue("active" in btn.get_attribute("class"),
+                        "Auto-Notes button should have active class when toggled on")
+
+        btn.click()
+        self.page.wait_for_timeout(500)
+        self.assertFalse("active" in btn.get_attribute("class"),
+                         "Auto-Notes button should NOT have active class when toggled off")
+
+    def test_auto_notes_off_clears_only_auto_notes(self):
+        """When auto-notes is turned off, only auto-generated notes are cleared."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Turn auto-notes on
+        self.page.click("#autoNotesBtn")
+        self.page.wait_for_timeout(500)
+
+        # Verify some notes appeared
+        notes_count = self.page.eval_on_selector_all(
+            "#board .cell .pencil-marks span.on",
+            "els => els.length"
+        )
+        self.assertGreater(notes_count, 0, "Auto-notes should fill pencil marks")
+
+        # Turn auto-notes off
+        self.page.click("#autoNotesBtn")
+        self.page.wait_for_timeout(500)
+
+        # Notes should be cleared
+        notes_count_after = self.page.eval_on_selector_all(
+            "#board .cell .pencil-marks span.on",
+            "els => els.length"
+        )
+        self.assertEqual(notes_count_after, 0,
+                         "Auto-notes off should clear all auto-generated notes")
+
+    def test_user_notes_preserved_when_auto_notes_off(self):
+        """User-entered notes should remain when auto-notes is turned off."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Switch to notes mode
+        self.page.click("#notesModeBtn")
+        self.page.wait_for_timeout(300)
+
+        # Click an empty cell, add a note
+        cells = self.page.query_selector_all("#board .cell")
+        empty_cell = None
+        for cell in cells:
+            text = cell.inner_text().strip()
+            if not text:
+                empty_cell = cell
+                break
+
+        if empty_cell:
+            empty_cell.click()
+            self.page.wait_for_timeout(100)
+            # Add note "5"
+            self.page.click(".num-btn[data-num='5']")
+            self.page.wait_for_timeout(200)
+
+        # Turn auto-notes on (should add more notes, keep user note)
+        self.page.click("#finalModeBtn")  # Switch back to final mode first
+        self.page.wait_for_timeout(100)
+        self.page.click("#autoNotesBtn")
+        self.page.wait_for_timeout(500)
+
+        # Turn auto-notes off (should clear auto notes, keep user note)
+        self.page.click("#autoNotesBtn")
+        self.page.wait_for_timeout(500)
+
+        # Check if at least one note remains (the user-entered one)
+        notes_remaining = self.page.eval_on_selector_all(
+            "#board .cell .pencil-marks span.on",
+            "els => els.length"
+        )
+        self.assertGreater(notes_remaining, 0,
+                          "User-entered notes should be preserved when auto-notes is off")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
