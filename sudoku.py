@@ -35,6 +35,33 @@ def _solve(board: list[list[int]]) -> bool:
     return True
 
 
+def _count_solutions(board: list[list[int]], limit: int = 2) -> int:
+    """Count solutions (up to limit) via backtracking. Does not mutate board."""
+    work = [row[:] for row in board]
+    count = 0
+
+    def backtrack() -> bool:
+        nonlocal count
+        for row in range(9):
+            for col in range(9):
+                if work[row][col] == 0:
+                    for num in range(1, 10):
+                        if _is_valid(work, row, col, num):
+                            work[row][col] = num
+                            if backtrack():
+                                work[row][col] = 0
+                                if count >= limit:
+                                    return True
+                            else:
+                                work[row][col] = 0
+                    return False
+        count += 1
+        return True
+
+    backtrack()
+    return count
+
+
 def generate_solved_board() -> list[list[int]]:
     """Generate a fully solved, randomized sudoku board."""
     board = create_empty_board()
@@ -62,6 +89,7 @@ def generate_puzzle(difficulty: int = 40) -> tuple[list[list[int]], list[list[in
 
     Returns:
         Tuple of (puzzle, solution) where puzzle has zeros for empty cells.
+        The puzzle is guaranteed to have a unique solution.
     """
     solution = generate_solved_board()
     puzzle = [row[:] for row in solution]
@@ -73,7 +101,14 @@ def generate_puzzle(difficulty: int = 40) -> tuple[list[list[int]], list[list[in
     for r, c in cells:
         if removed >= difficulty:
             break
+        # Temporarily remove the cell and check uniqueness
+        backup = puzzle[r][c]
         puzzle[r][c] = 0
-        removed += 1
+        if _count_solutions(puzzle, limit=2) == 1:
+            # Unique solution preserved — keep the removal
+            removed += 1
+        else:
+            # Removing this cell creates ambiguity — restore it
+            puzzle[r][c] = backup
 
     return puzzle, solution

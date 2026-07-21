@@ -628,6 +628,12 @@ The generator in [`sudoku.py`](sudoku.py) uses a classic **backtracking algorith
 
 This guarantees every generated puzzle has a valid unique solution.
 
+### Uniqueness Guarantee
+
+After removing each cell, the generator verifies the puzzle still has **exactly one solution** by running a solution counter (backtracking that stops after finding 2 solutions). If removing a cell would create ambiguity (multiple solutions), that cell is restored and the next candidate is tried. This ensures every puzzle is solvable by logic alone — no guessing required.
+
+> **Note:** At very high difficulty levels (e.g. Expert with 58 removals), it may not be possible to remove all requested cells while maintaining uniqueness. In that case, the generator removes as many as it can (typically 55–57).
+
 ---
 
 ## 🔍 Auditing
