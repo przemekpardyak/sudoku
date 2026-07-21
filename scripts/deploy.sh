@@ -129,22 +129,40 @@ else
   if ! gcloud storage buckets describe "gs://${LOGS_BUCKET}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
     echo "  → Creating Cloud Build logs bucket: gs://${LOGS_BUCKET}"
     gcloud storage buckets create "gs://${LOGS_BUCKET}" \
-      --project="${PROJECT_ID}" --location="${REGION}" --quiet >/dev/null 2>&1 || true
+      --project="${PROJECT_ID}" --location=US 2>&1 || true
+    sleep 5
   fi
-  # Grant the SA access to the logs bucket.
-  gcloud storage buckets add-iam-policy-binding "gs://${LOGS_BUCKET}" \
-    --member="serviceAccount:${SA_EMAIL}" \
-    --role="roles/storage.objectAdmin" \
-    --project="${PROJECT_ID}" --quiet >/dev/null 2>&1 || true
+  # Grant the SA access to the logs bucket (retry for GCS eventual consistency).
+  for iam_attempt in 1 2 3; do
+    gcloud storage buckets add-iam-policy-binding "gs://${LOGS_BUCKET}" \
+      --member="serviceAccount:${SA_EMAIL}" \
+      --role="roles/storage.objectAdmin" \
+      --project="${PROJECT_ID}" --quiet >/dev/null 2>&1 && break
+    echo "  ⚠ IAM binding for logs bucket failed (attempt ${iam_attempt}/3), retrying in 5s..."
+    sleep 5
+  done
 
   # Grant the SA access to the Cloud Build source bucket ({project_id}_cloudbuild).
   # Cloud Build uploads source tarballs here, and the SA needs read access to
-  # download them during the build.
+  # download them during the build. The bucket may not exist yet (e.g. after
+  # cleanup deleted it), so create it first.
   CB_SOURCE_BUCKET="${PROJECT_ID}_cloudbuild"
-  gcloud storage buckets add-iam-policy-binding "gs://${CB_SOURCE_BUCKET}" \
-    --member="serviceAccount:${SA_EMAIL}" \
-    --role="roles/storage.objectAdmin" \
-    --project="${PROJECT_ID}" --quiet >/dev/null 2>&1 || true
+  if ! gcloud storage buckets describe "gs://${CB_SOURCE_BUCKET}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+    echo "  → Creating Cloud Build source bucket: gs://${CB_SOURCE_BUCKET}"
+    gcloud storage buckets create "gs://${CB_SOURCE_BUCKET}" \
+      --project="${PROJECT_ID}" --location=US 2>&1 || true
+    # GCS bucket creation is eventually consistent — wait before granting permissions.
+    sleep 5
+  fi
+  # Retry IAM binding: GCS may return 404 for a freshly created bucket.
+  for iam_attempt in 1 2 3; do
+    gcloud storage buckets add-iam-policy-binding "gs://${CB_SOURCE_BUCKET}" \
+      --member="serviceAccount:${SA_EMAIL}" \
+      --role="roles/storage.objectAdmin" \
+      --project="${PROJECT_ID}" --quiet >/dev/null 2>&1 && break
+    echo "  ⚠ IAM binding for source bucket failed (attempt ${iam_attempt}/3), retrying in 5s..."
+    sleep 5
+  done
 
   # When using a custom SA, Cloud Build requires --service-account and --gcs-log-dir.
   CB_SA_FLAG="--service-account=projects/${PROJECT_ID}/serviceAccounts/${SA_EMAIL} --gcs-log-dir=gs://${LOGS_BUCKET}"
@@ -198,9 +216,9 @@ for attempt in $(seq 1 ${MAX_RETRIES}); do
 done
 
 # Wait for APIs to propagate before Cloud Build tries to use them.
-# GCP APIs can take 10-30s to become fully available after enablement.
-echo "  Waiting 30s for API propagation..."
-sleep 30
+# GCP APIs can take 30-60s to become fully available after enablement.
+echo "  Waiting 60s for API propagation..."
+sleep 60
 
 # --- Phase 2: Build & push the container image via Cloud Build ----------------
 # We use Google Cloud Build instead of the local Docker daemon so the script
@@ -209,8 +227,8 @@ sleep 30
 echo
 echo "▶ Phase 2: Building & pushing image via Cloud Build: ${IMAGE}"
 # Retry loop: Cloud Build API may not be fully propagated yet.
-MAX_RETRIES=3
-RETRY_DELAY=30
+MAX_RETRIES=5
+RETRY_DELAY=60
 for attempt in $(seq 1 ${MAX_RETRIES}); do
   # shellcheck disable=SC2086
   timeout 300 gcloud builds submit "${PROJECT_ROOT}" \
