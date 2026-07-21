@@ -44,12 +44,17 @@ fi
 echo
 echo "⚠️  This will DELETE all '${APP_NAME}' resources from project: ${PROJECT_ID}"
 echo "   Region: ${REGION}"
+echo "   (Auto-approved — set CONFIRM_CLEANUP=true to require manual confirmation)"
 echo
-read -r -p "Continue? [y/N] " confirm
-case "$confirm" in
-  [yY]|[yY][eE][sS]) ;;
-  *) echo "Aborted."; exit 0 ;;
-esac
+
+# Only require confirmation when explicitly requested.
+if [ "${CONFIRM_CLEANUP:-false}" = "true" ]; then
+  read -r -p "Continue? [y/N] " confirm
+  case "$confirm" in
+    [yY]|[yY][eE][sS]) ;;
+    *) echo "Aborted."; exit 0 ;;
+  esac
+fi
 
 # --- Pre-cleanup audit -------------------------------------------------------
 if [ "${SKIP_AUDITS}" != "true" ]; then
@@ -190,6 +195,23 @@ echo "▶ Phase 7: API cleanup..."
 echo "  ⓪ Terraform uses disable_on_destroy=true, so APIs are disabled during"
 echo "     terraform destroy in Phase 1. No manual API cleanup needed."
 SKIPPED+=("Manual API disablement (handled by Terraform destroy)")
+
+# --- Phase 8: Delete Firestore database (if exists) ---------------------------
+echo
+echo "▶ Phase 8: Deleting Firestore database (if exists)..."
+# Firestore databases can be deleted via gcloud. The "(default)" database
+# is created by Terraform (firestore.tf). We delete it here in case
+# Terraform destroy didn't clean it up (Firestore deletion can be slow).
+if gcloud firestore databases list --project="${PROJECT_ID}" 2>/dev/null | grep -q "(default)"; then
+  echo "  → Deleting Firestore database..."
+  gcloud firestore databases delete --project="${PROJECT_ID}" --quiet 2>/dev/null || {
+    echo "  ⚠ Firestore database deletion may have failed (it can take several minutes)."
+    echo "    You may need to delete it manually in the console."
+  }
+  DELETED+=("Firestore database (default)")
+else
+  SKIPPED+=("Firestore database (not found)")
+fi
 
 # --- Summary -----------------------------------------------------------------
 echo

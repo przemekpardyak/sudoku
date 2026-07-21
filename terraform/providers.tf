@@ -29,8 +29,8 @@ resource "google_project_service" "enabled_apis" {
     "iamcredentials.googleapis.com",
   ])
 
-  service            = each.value
-  disable_on_destroy = true
+  service                    = each.value
+  disable_on_destroy         = true
   disable_dependent_services = true
 }
 
@@ -46,7 +46,7 @@ resource "google_project_service" "iap_apis" {
     "servicemanagement.googleapis.com",
   ]) : toset([])
 
-  service            = each.value
-  disable_on_destroy = true
+  service                    = each.value
+  disable_on_destroy         = true
   disable_dependent_services = true
 }

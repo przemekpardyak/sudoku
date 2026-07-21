@@ -23,6 +23,14 @@ resource "google_cloud_run_v2_service" "app" {
           "cpu"    = var.cpu
         }
       }
+      env {
+        name  = "FIRESTORE_PROJECT"
+        value = var.project_id
+      }
+      env {
+        name  = "FIRESTORE_COLLECTION"
+        value = "games"
+      }
       # NOTE: Do not set PORT here — Cloud Run v2 sets it automatically as a reserved variable.
       # The container must listen on $PORT (gunicorn in the Dockerfile binds to 0.0.0.0:8080
       # by default; Cloud Run matches PORT=8080 to the EXPOSE directive).
@@ -72,4 +80,17 @@ resource "google_cloud_run_v2_service_iam_binding" "invoker" {
   name     = google_cloud_run_v2_service.app.name
   role     = "roles/run.invoker"
   members  = length(var.invoker_members) > 0 ? var.invoker_members : ["user:${data.google_client_openid_userinfo.me.email}"]
+}
+
+/**
+ * Grant the Cloud Run service account access to Firestore.
+ * This allows the app to read/write game state documents.
+ */
+resource "google_project_iam_member" "firestore_user" {
+  count   = var.service_account_email != null ? 1 : 0
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${var.service_account_email}"
+
+  depends_on = [google_firestore_database.games_db]
 }

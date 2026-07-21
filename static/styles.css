@@ -465,3 +465,104 @@ body::before {
   .game { grid-template-columns: 1fr; }
   .panel { order: 2; }
 }
+
+/* Games list modal */
+.modal-wide {
+  max-width: 720px;
+  width: 90%;
+  text-align: left;
+}
+
+.modal-wide h2 {
+  text-align: center;
+}
+
+.games-list {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.games-list table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.games-list th {
+  text-align: left;
+  padding: 10px 8px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.games-list td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.games-list tr:hover td {
+  background: var(--surface-hi);
+}
+
+.games-list .game-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.games-list .game-actions button {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-hi);
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.games-list .game-actions button:hover {
+  background: var(--surface-solid);
+  border-color: var(--accent);
+}
+
+.games-list .game-actions .resume-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.games-list .game-actions .delete-btn:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.difficulty-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.difficulty-badge.easy { background: rgba(61, 220, 151, 0.2); color: var(--success); }
+.difficulty-badge.medium { background: rgba(255, 184, 77, 0.2); color: var(--warning); }
+.difficulty-badge.hard { background: rgba(255, 84, 112, 0.2); color: var(--danger); }
+.difficulty-badge.expert { background: rgba(124, 92, 255, 0.2); color: var(--accent-hi); }
+
+@media (max-width: 820px) {
+  .modal-wide { width: 95%; padding: 24px; }
+  .games-list table { font-size: 12px; }
+}

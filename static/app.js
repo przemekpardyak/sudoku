@@ -23,6 +23,13 @@
   let elapsed = 0;
   let difficulty = 40;
   let mode = 'final'; // 'final' | 'notes'
+  let currentGameId = null;
+  let saveTimer = null;
+  let gameCompleted = false;
+  const STORAGE_KEY = 'sudoku_current_game';
+  const gamesOverlay = document.getElementById('gamesOverlay');
+  const gamesTableBody = document.getElementById('gamesTableBody');
+  const gamesEmpty = document.getElementById('gamesEmpty');
 
   // ----- Undo/Redo -----
   // Each snapshot captures board, notes, given, mistakes
@@ -61,6 +68,7 @@
     restore(undoStack.pop());
     updateUndoRedoButtons();
     flashHint('Undo');
+    scheduleAutoSave();
   }
 
   function redo() {
@@ -69,6 +77,7 @@
     restore(redoStack.pop());
     updateUndoRedoButtons();
     flashHint('Redo');
+    scheduleAutoSave();
   }
 
   function updateUndoRedoButtons() {
@@ -226,6 +235,7 @@
       renderCellContent(r, c, cell);
       updateNumpad();
       applyHighlights();
+      scheduleAutoSave();
       return;
     }
 
@@ -239,6 +249,7 @@
 
     updateNumpad();
     applyHighlights();
+    scheduleAutoSave();
     checkWin();
   }
 
@@ -291,6 +302,8 @@
       }
     }
     stopTimer();
+    gameCompleted = true;
+    saveGameToServer(); // save final state
     modalTitle.textContent = '🎉 You solved it!';
     modalBody.textContent = `Time: ${formatTime(elapsed)} · Mistakes: ${mistakes}`;
     overlay.classList.add('show');
@@ -344,6 +357,7 @@
     updateNumpad();
     hintCell = null;
     flashHint('Hint applied!');
+    scheduleAutoSave();
     checkWin();
   }
 
@@ -374,10 +388,13 @@
   // ----- New game -----
   async function newGame() {
     overlay.classList.remove('show');
+    gamesOverlay.classList.remove('show');
     mistakes = 0;
     mistakesEl.textContent = '0';
     undoStack = [];
     redoStack = [];
+    gameCompleted = false;
+    currentGameId = null;
     updateUndoRedoButtons();
     flashHint('Generating new puzzle…');
     try {
@@ -393,6 +410,8 @@
       resetTimer();
       startTimer();
       flashHint('');
+      // Create game record on server
+      await createGameOnServer();
     } catch (err) {
       flashHint('Failed to load puzzle.');
     }
@@ -442,6 +461,217 @@
     }
   }
 
+  // ----- Game persistence -----
+  function serializeState() {
+    return {
+      puzzle: puzzle.map((row) => [...row]),
+      solution: solution.map((row) => [...row]),
+      board: board.map((row) => [...row]),
+      given: given.map((row) => [...row]),
+      notes: notes.map((row) => row.map((n) => [...n])),
+      undoStack: undoStack.map((snap) => ({
+        board: snap.board.map((r) => [...r]),
+        notes: snap.notes.map((r) => r.map((n) => [...n])),
+        given: snap.given.map((r) => [...r]),
+        mistakes: snap.mistakes,
+      })),
+      redoStack: redoStack.map((snap) => ({
+        board: snap.board.map((r) => [...r]),
+        notes: snap.notes.map((r) => r.map((n) => [...n])),
+        given: snap.given.map((r) => [...r]),
+        mistakes: snap.mistakes,
+      })),
+      mistakes,
+      elapsed,
+      difficulty,
+      completed: gameCompleted,
+    };
+  }
+
+  function saveToLocalStorage() {
+    if (currentGameId) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ game_id: currentGameId }));
+      } catch (e) { /* localStorage may be unavailable */ }
+    }
+  }
+
+  function scheduleAutoSave() {
+    if (gameCompleted) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveGameToServer, 2000); // debounce 2s
+  }
+
+  async function createGameOnServer() {
+    const state = serializeState();
+    try {
+      const res = await fetch('/api/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state),
+      });
+      const data = await res.json();
+      currentGameId = data.game_id;
+      saveToLocalStorage();
+    } catch (err) {
+      // Server may be unavailable; game still works locally
+    }
+  }
+
+  async function saveGameToServer() {
+    if (!currentGameId || gameCompleted) return;
+    const state = serializeState();
+    try {
+      await fetch(`/api/games/${currentGameId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(state),
+      });
+    } catch (err) {
+      // Silently fail — game continues locally
+    }
+  }
+
+  async function loadGame(gameId) {
+    try {
+      const res = await fetch(`/api/games/${gameId}`);
+      if (!res.ok) {
+        flashHint('Game not found.');
+        return;
+      }
+      const state = await res.json();
+      restoreFromState(state);
+      currentGameId = gameId;
+      saveToLocalStorage();
+      gamesOverlay.classList.remove('show');
+      flashHint('Game loaded!');
+    } catch (err) {
+      flashHint('Failed to load game.');
+    }
+  }
+
+  function restoreFromState(state) {
+    puzzle = state.puzzle;
+    solution = state.solution;
+    board = state.board;
+    given = state.given;
+    notes = state.notes;
+    mistakes = state.mistakes || 0;
+    elapsed = state.elapsed || 0;
+    difficulty = state.difficulty || 40;
+    gameCompleted = state.completed || false;
+    undoStack = state.undoStack || [];
+    redoStack = state.redoStack || [];
+    selected = null;
+    mistakesEl.textContent = mistakes;
+    // Update difficulty buttons
+    document.querySelectorAll('.diff-btn').forEach((b) => {
+      b.classList.toggle('active', +b.dataset.difficulty === difficulty);
+    });
+    renderBoard();
+    updateUndoRedoButtons();
+    // Restore timer
+    stopTimer();
+    timerEl.textContent = formatTime(elapsed);
+    if (!gameCompleted) startTimer();
+  }
+
+  async function loadGamesList() {
+    try {
+      const res = await fetch('/api/games?limit=50');
+      const data = await res.json();
+      renderGamesList(data.games || []);
+    } catch (err) {
+      flashHint('Failed to load games list.');
+    }
+  }
+
+  function renderGamesList(games) {
+    gamesTableBody.innerHTML = '';
+    if (games.length === 0) {
+      gamesEmpty.style.display = 'block';
+      return;
+    }
+    gamesEmpty.style.display = 'none';
+
+    const diffNames = { 30: 'Easy', 40: 'Medium', 50: 'Hard', 58: 'Expert' };
+    const diffClasses = { 30: 'easy', 40: 'medium', 50: 'hard', 58: 'expert' };
+
+    for (const game of games) {
+      const row = document.createElement('tr');
+      const diff = game.difficulty || 40;
+      const diffName = diffNames[diff] || 'Medium';
+      const diffClass = diffClasses[diff] || 'medium';
+      const updated = game.updated_at ? new Date(game.updated_at).toLocaleString() : '—';
+
+      row.innerHTML = `
+        <td><span class="difficulty-badge ${diffClass}">${diffName}</span></td>
+        <td>${game.progress || '—'}</td>
+        <td>${game.mistakes || 0}</td>
+        <td>${formatTime(game.elapsed || 0)}</td>
+        <td>${updated}</td>
+        <td>
+          <div class="game-actions">
+            <button class="resume-btn" data-id="${game.game_id}">▶ Resume</button>
+            <button class="delete-btn" data-id="${game.game_id}">🗑 Delete</button>
+          </div>
+        </td>
+      `;
+      gamesTableBody.appendChild(row);
+    }
+
+    // Attach event listeners
+    gamesTableBody.querySelectorAll('.resume-btn').forEach((btn) => {
+      btn.addEventListener('click', () => loadGame(btn.dataset.id));
+    });
+    gamesTableBody.querySelectorAll('.delete-btn').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        try {
+          await fetch(`/api/games/${btn.dataset.id}`, { method: 'DELETE' });
+          if (btn.dataset.id === currentGameId) {
+            currentGameId = null;
+            localStorage.removeItem(STORAGE_KEY);
+          }
+          loadGamesList(); // refresh
+          flashHint('Game deleted.');
+        } catch (err) {
+          flashHint('Failed to delete game.');
+        }
+      });
+    });
+  }
+
+  function showGamesModal() {
+    gamesOverlay.classList.add('show');
+    loadGamesList();
+  }
+
+  function hideGamesModal() {
+    gamesOverlay.classList.remove('show');
+  }
+
+  // Try to resume the last game from localStorage on page load
+  async function tryResumeLastGame() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return false;
+      const { game_id } = JSON.parse(saved);
+      if (!game_id) return false;
+      const res = await fetch(`/api/games/${game_id}`);
+      if (!res.ok) {
+        localStorage.removeItem(STORAGE_KEY);
+        return false;
+      }
+      const state = await res.json();
+      restoreFromState(state);
+      currentGameId = game_id;
+      flashHint('Resumed your last game!');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   // ----- Event listeners -----
   document.getElementById('numpad').addEventListener('click', (e) => {
     const btn = e.target.closest('.num-btn');
@@ -456,6 +686,8 @@
   document.getElementById('newGameBtn').addEventListener('click', newGame);
   document.getElementById('checkBtn').addEventListener('click', checkBoard);
   document.getElementById('modalNewGame').addEventListener('click', newGame);
+  document.getElementById('loadGamesBtn').addEventListener('click', showGamesModal);
+  document.getElementById('closeGamesBtn').addEventListener('click', hideGamesModal);
 
   undoBtn.addEventListener('click', undo);
   redoBtn.addEventListener('click', redo);
@@ -518,6 +750,11 @@
     }
   });
 
-  // Start initial game
-  newGame();
+  // Start: try resuming last game, otherwise start new
+  (async () => {
+    const resumed = await tryResumeLastGame();
+    if (!resumed) {
+      await newGame();
+    }
+  })();
 })();

@@ -11,3 +11,5 @@ min_instance_count     = 0
 memory                 = "512Mi"
 cpu                    = "1"
 allow_unauthenticated  = true
+firestore_location     = "nam5"
+firestore_enable_pitr  = false

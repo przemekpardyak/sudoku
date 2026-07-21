@@ -83,6 +83,7 @@
           </div>
           <button class="action-btn" id="checkBtn">Check</button>
           <button class="action-btn hint-hold" id="hintBtn">Hint</button>
+          <button class="action-btn" id="loadGamesBtn">📂 Load Games</button>
         </section>
 
         <p class="hint-text" id="hintText"></p>
@@ -99,6 +100,31 @@
       <h2 id="modalTitle">🎉 You solved it!</h2>
       <p id="modalBody"></p>
       <button class="action-btn primary" id="modalNewGame">Play Again</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="gamesOverlay">
+    <div class="modal modal-wide">
+      <h2>📂 Saved Games</h2>
+      <p id="gamesEmpty" style="display:none; color: var(--text-dim);">No saved games yet. Start playing and your progress is saved automatically!</p>
+      <div class="games-list" id="gamesList">
+        <table>
+          <thead>
+            <tr>
+              <th>Difficulty</th>
+              <th>Progress</th>
+              <th>Mistakes</th>
+              <th>Time</th>
+              <th>Last Played</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="gamesTableBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="action-btn" id="closeGamesBtn">Close</button>
+      </div>
     </div>
   </div>
 

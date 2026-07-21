@@ -96,3 +96,15 @@ variable "iap_lb_scheme" {
   type        = string
   default     = "EXTERNAL"
 }
+
+variable "firestore_location" {
+  description = "Location for the Firestore database. Use a multi-region (e.g. nam5) for best availability or a regional location close to your Cloud Run region."
+  type        = string
+  default     = "nam5"
+}
+
+variable "firestore_enable_pitr" {
+  description = "Enable point-in-time recovery for Firestore (continuous backups). Adds cost but allows restoring to any point in the last hour."
+  type        = bool
+  default     = false
+}

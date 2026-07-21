@@ -17,3 +17,7 @@ README.md
 deploy.sh
 .dockerignore
 .gcloudignore
+test_*.py
+scripts/
+audits/
+docs/

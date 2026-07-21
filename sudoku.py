@@ -20,8 +20,27 @@ def _is_valid(board: list[list[int]], row: int, col: int, num: int) -> bool:
     return True
 
 
+def _has_conflicts(board: list[list[int]]) -> bool:
+    """Check if the board has any duplicate non-zero values in rows, columns, or boxes."""
+    # Check rows and columns
+    for i in range(9):
+        row_vals = [v for v in board[i] if v != 0]
+        col_vals = [board[r][i] for r in range(9) if board[r][i] != 0]
+        if len(row_vals) != len(set(row_vals)) or len(col_vals) != len(set(col_vals)):
+            return True
+    # Check 3x3 boxes
+    for br in range(0, 9, 3):
+        for bc in range(0, 9, 3):
+            box = [board[br + dr][bc + dc] for dr in range(3) for dc in range(3) if board[br + dr][bc + dc] != 0]
+            if len(box) != len(set(box)):
+                return True
+    return False
+
+
 def _solve(board: list[list[int]]) -> bool:
     """Solve the board in place using backtracking. Returns True if solved."""
+    if _has_conflicts(board):
+        return False
     for row in range(9):
         for col in range(9):
             if board[row][col] == 0:
@@ -37,6 +56,8 @@ def _solve(board: list[list[int]]) -> bool:
 
 def _count_solutions(board: list[list[int]], limit: int = 2) -> int:
     """Count solutions (up to limit) via backtracking. Does not mutate board."""
+    if _has_conflicts(board):
+        return 0
     work = [row[:] for row in board]
     count = 0
 

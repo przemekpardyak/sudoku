@@ -198,8 +198,11 @@ for attempt in $(seq 1 ${MAX_RETRIES}); do
     -var="app_name=${APP_NAME}" \
     -var="image_tag=${IMAGE_TAG}" \
     -target=google_project_service.enabled_apis \
+    -target=google_project_service.firestore_api \
     -target=google_artifact_registry_repository.app_repo \
-    ${TF_ARGS}
+    -target=google_firestore_database.games_db \
+    -auto-approve
+  ${TF_ARGS}
   TF_EXIT=$?
   if [ ${TF_EXIT} -eq 0 ]; then
     break
@@ -260,6 +263,7 @@ terraform -chdir="${TF_DIR}" apply \
   -var="app_name=${APP_NAME}" \
   -var="image_tag=${IMAGE_TAG}" \
   ${TF_SA_VAR} \
+  -auto-approve
   ${TF_ARGS}
 
 # Deploy a fresh revision pointing at the just-pushed image.

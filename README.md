@@ -20,6 +20,13 @@ Generate fresh puzzles, play in your browser, and track your time and mistakes.
 - **Built-in Timer** — tracks elapsed time; win screen shows your final stats
 - **Modern UI** — dark glassmorphism theme, gradient accents, smooth micro-animations
 
+### Game Persistence
+- **Auto-Save** — game state is automatically saved every 2 seconds after any change (debounced). Survives browser restarts and backend restarts.
+- **Full State Saved** — saves the board, pencil marks, given cells, mistakes, elapsed time, difficulty, undo/redo stacks, and completion status
+- **Resume Last Game** — when you reopen the page, your last game is automatically restored so you can pick up where you left off
+- **Game List** — click **📂 Load Games** to see all saved games with metadata (difficulty, progress, mistakes, time, last played). Resume any game or delete old ones.
+- **Server-Side Storage** — uses **Google Cloud Firestore** in production (survives container restarts), falls back to in-memory storage for local development
+
 ### Pencil Marks (Notes)
 - Toggle between **Final** (✏️) and **Notes** (📝) mode using the buttons in the right panel, or press `N`
 - In **Notes mode**, clicking a number (1–9) toggles a small pencil mark in the selected cell's 3×3 mini-grid
@@ -96,26 +103,59 @@ Generate fresh puzzles, play in your browser, and track your time and mistakes.
 
 ```
 sudoku/
-├── app.py              # Flask application and API endpoints
-├── sudoku.py           # Puzzle generator & backtracking solver
-├── requirements.txt    # Python dependencies
-├── README.md           # This file
+├── app.py                  # Flask application and API endpoints (game + persistence)
+├── sudoku.py               # Puzzle generator & backtracking solver
+├── storage.py              # Game persistence layer (Firestore + in-memory fallback)
+├── requirements.txt        # Python dependencies (Flask, google-cloud-firestore)
+├── run_all_tests.py        # Python test runner (auto-discovers test_*.py)
+├── README.md               # This file
+├── test_sudoku.py          # Unit tests for puzzle generation & solver
+├── test_storage.py         # Unit tests for storage layer (InMemory + Firestore mocked)
+├── test_app.py             # Integration tests for Flask API endpoints
+├── Dockerfile              # Container image definition (python:3.11-slim + gunicorn)
+├── .dockerignore           # Files excluded from Docker build
+├── .gcloudignore           # Files excluded from Cloud Build upload
 ├── static/
-│   ├── styles.css      # Dark glassmorphism theme & animations
-│   └── app.js          # Game logic: rendering, input, validation, undo/redo, hints
-└── templates/
-    └── index.html      # Main game UI
+│   ├── styles.css          # Dark glassmorphism theme & animations
+│   └── app.js              # Game logic: rendering, input, validation, undo/redo, hints, auto-save
+├── templates/
+│   └── index.html          # Main game UI
+├── scripts/
+│   ├── deploy.sh           # One-command deploy script (infra → build → deploy)
+│   ├── cleanup.sh          # One-command teardown script (8 phases)
+│   ├── run_tests.sh        # Bash test runner (with --watch, --quiet, --fail-fast)
+│   └── watch_tests.py      # Python file watcher for auto-running tests
+└── terraform/
+    ├── providers.tf        # Google provider config + enabled APIs
+    ├── variables.tf         # All Terraform variables
+    ├── cloud_run.tf        # Cloud Run service + IAM + Firestore env vars
+    ├── artifact_registry.tf # Docker repository
+    ├── firestore.tf        # Firestore database (Native mode)
+    ├── iap.tf              # Optional IAP + Load Balancer
+    ├── outputs.tf          # Terraform outputs
+    └── terraform.tfvars.example  # Example variable values
 ```
 
 ### File Responsibilities
 
 | File               | Purpose                                                              |
 |--------------------|----------------------------------------------------------------------|
-| `app.py`           | Flask server exposing `/` (game page) and `/api/new-game` (puzzle)  |
+| `app.py`           | Flask server exposing `/`, `/api/new-game`, and `/api/games` CRUD endpoints |
 | `sudoku.py`        | Core logic: `generate_puzzle()`, `generate_solved_board()`, `_solve()` |
-| `templates/index.html` | HTML structure: board, numpad, mode toggle, undo/redo, hint, win modal |
-| `static/styles.css`    | Visual design: layout, colors, animations, disabled states, hint preview |
-| `static/app.js`        | Client logic: cell selection, number/notes placement, undo/redo, numpad disable, hint preview, timer, win detection |
+| `storage.py`       | Game persistence: `InMemoryStorage` (dev), `FirestoreStorage` (prod), `get_storage()` factory |
+| `templates/index.html` | HTML structure: board, numpad, mode toggle, undo/redo, hint, games list, win modal |
+| `static/styles.css`    | Visual design: layout, colors, animations, disabled states, hint preview, games modal |
+| `static/app.js`        | Client logic: cell selection, number/notes, undo/redo, numpad, hints, auto-save, game list |
+| `test_sudoku.py`       | 31 unit tests: solver, validity checking, puzzle generation, uniqueness verification |
+| `test_storage.py`      | 20 unit tests: InMemoryStorage CRUD, FirestoreStorage (mocked), factory |
+| `test_app.py`          | 12 integration tests: Flask API endpoints for game persistence CRUD |
+| `Dockerfile`           | Container image: python:3.11-slim, gunicorn, port 8080 |
+| `scripts/deploy.sh`    | One-command deploy: infra bootstrap → Cloud Build → Cloud Run deploy |
+| `scripts/cleanup.sh`   | One-command teardown: 8 phases including Firestore cleanup |
+| `scripts/run_tests.sh` | Bash test runner with --watch, --quiet, --fail-fast flags |
+| `run_all_tests.py`     | Python test runner: auto-discovers test_*.py files |
+| `terraform/firestore.tf` | Firestore database (Native mode) + API enablement |
+| `terraform/cloud_run.tf` | Cloud Run service, IAM, Firestore env vars |
 
 ---
 
@@ -175,6 +215,94 @@ do a hard refresh in your browser (`Ctrl+Shift+R`) after editing them.
 
 ---
 
+## 🧪 Testing
+
+The project has **63 tests** across three test files, all using Python's built-in `unittest` framework (no pytest dependency).
+
+### Test files
+
+| File               | Tests | What it covers |
+|--------------------|-------|----------------|
+| [test_sudoku.py](test_sudoku.py) | 31 | Solver correctness, board validation, puzzle generation, uniqueness verification |
+| [test_storage.py](test_storage.py) | 20 | InMemoryStorage CRUD + ordering + limits, FirestoreStorage (mocked), `get_storage()` factory |
+| [test_app.py](test_app.py) | 12 | Flask API integration: create/get/list/update/delete games, 404 handling, undo/redo roundtrip |
+
+### Running tests
+
+**Option 1: Bash runner** (recommended — auto-creates venv, installs deps)
+
+```bash
+# Run all tests once
+./scripts/run_tests.sh
+
+# Re-run tests automatically when files change
+./scripts/run_tests.sh --watch
+
+# Less verbose output
+./scripts/run_tests.sh --quiet
+
+# Stop on first failure
+./scripts/run_tests.sh --fail-fast
+```
+
+**Option 2: Python runner** (auto-discovers all `test_*.py` files)
+
+```bash
+# Run all tests
+venv/bin/python3 run_all_tests.py
+
+# Run a specific test module
+venv/bin/python3 run_all_tests.py --module test_storage
+
+# Stop on first failure
+venv/bin/python3 run_all_tests.py --fail-fast
+
+# Watch mode (re-runs on file changes)
+venv/bin/python3 run_all_tests.py --watch
+```
+
+**Option 3: Direct unittest** (if venv is already set up)
+
+```bash
+venv/bin/python3 -m unittest test_sudoku test_storage test_app -v
+```
+
+### Auto-running tests on dependency changes
+
+A file watcher script is included that monitors source files and automatically re-runs tests when any change is detected:
+
+```bash
+# Using the bash runner's --watch flag (recommended)
+./scripts/run_tests.sh --watch
+
+# Or using the standalone watcher
+venv/bin/python3 scripts/watch_tests.py
+```
+
+The watcher monitors: `sudoku.py`, `app.py`, `storage.py`, `test_*.py`, and `requirements.txt`.
+
+### Test output example
+
+```
+🧪 Running all tests (auto-discovered)
+────────────────────────────────────────────────────────
+
+test_create_game_returns_id (test_storage.TestInMemoryStorage.test_create_game_returns_id) ... ok
+test_full_state_roundtrip (test_storage.TestInMemoryStorage.test_full_state_roundtrip) ... ok
+test_create_game (test_app.TestGamePersistenceAPI.test_create_game) ... ok
+test_solves_empty_board (test_sudoku.TestSolve.test_solves_empty_board) ... ok
+...
+
+────────────────────────────────────────────────────────
+✅ All tests passed (45.2s)
+   57 passed, 6 skipped, 63 total
+```
+
+> [!NOTE]
+> The 6 Firestore tests are skipped when `google-cloud-firestore` is not installed locally. They use mocks but require the module to be importable. In the Docker/Cloud Run environment, the library is installed and all tests run.
+
+---
+
 ## ☁️ Deploy to Google Cloud (Cloud Run + Terraform)
 
 This app ships with Terraform code that deploys it to **Google Cloud Run** — a fully managed, serverless container platform with built-in HTTPS, automatic scaling (including scale-to-zero), and per-request billing.
@@ -212,10 +340,13 @@ flowchart LR
 | Resource | Terraform file | Purpose |
 |----------|----------------|---------|
 | Core APIs (5) | [providers.tf](terraform/providers.tf) | Cloud Run, Artifact Registry, Cloud Build, Compute Engine, IAM Credentials |
+| Firestore API | [firestore.tf](terraform/firestore.tf) | Firestore (Native mode) for game state persistence |
 | *(optional)* IAP APIs (6) | [providers.tf](terraform/providers.tf) | IAP, Certificate Manager, Network Services/Security — only enabled when `enable_iap=true` |
 | Artifact Registry repo (`sudoku-repo`) | [artifact_registry.tf](terraform/artifact_registry.tf) | Stores the Docker image |
-| Cloud Run service (`sudoku`) | [cloud_run.tf](terraform/cloud_run.tf) | Serves the Flask app via gunicorn on port 8080 |
+| Firestore database (`(default)`) | [firestore.tf](terraform/firestore.tf) | Server-side storage for saved games (survives container restarts) |
+| Cloud Run service (`sudoku`) | [cloud_run.tf](terraform/cloud_run.tf) | Serves the Flask app via gunicorn on port 8080; injects `FIRESTORE_PROJECT` env var |
 | `roles/run.invoker` IAM binding | [cloud_run.tf](terraform/cloud_run.tf) | Grants the authenticated user permission to invoke the service |
+| `roles/datastore.user` IAM binding | [cloud_run.tf](terraform/cloud_run.tf) | Grants the Cloud Run service account read/write access to Firestore |
 | *(optional)* IAP brand, client, LB, NEG | [iap.tf](terraform/iap.tf) | Identity-Aware Proxy + global HTTPS Load Balancer (see below) |
 
 ### Prerequisites
@@ -265,9 +396,9 @@ The included [deploy.sh](scripts/deploy.sh) script orchestrates the full deploy 
 | Phase | What happens |
 |-------|--------------|
 | 0. Service account | Checks if the default Compute Engine SA exists. If not (e.g. deleted during cleanup), creates a dedicated `{app_name}-sa` SA with Cloud Build + Artifact Registry roles and a logs bucket. |
-| 1. Bootstrap | `terraform apply` (targeted) enables APIs and creates the Artifact Registry repo |
+| 1. Bootstrap | `terraform apply` (targeted, auto-approved) enables APIs (including Firestore API), creates the Artifact Registry repo, and provisions the Firestore database |
 | 2. Build | `gcloud builds submit` builds the Docker image in Cloud Build and pushes it to Artifact Registry |
-| 3. Deploy | `terraform apply` (full) creates the Cloud Run service + IAM, then `gcloud run deploy` rolls out a new revision |
+| 3. Deploy | `terraform apply` (full, auto-approved) creates the Cloud Run service + IAM + Firestore env vars, then `gcloud run deploy` rolls out a new revision |
 
 ```bash
 cd /usr/local/google/home/ppardyak/Dogfood/sudoku
@@ -282,7 +413,7 @@ Optional environment variables:
 | `REGION`     | `us-central1` | GCP region                               |
 | `APP_NAME`   | `sudoku`      | Service + repo name                      |
 | `IMAGE_TAG`  | `latest`      | Container image tag                     |
-| `TF_ARGS`    | *(empty)*     | Extra args to `terraform apply` (e.g. `-auto-approve`) |
+| `TF_ARGS`    | *(empty)*     | Extra args to `terraform apply` (auto-approve is now built-in) |
 
 On success, the script prints the Cloud Run service URL and the image path.
 
@@ -408,6 +539,8 @@ terraform apply \
 | `iap_lb_scheme`           | `EXTERNAL`    | LB scheme for IAP. Use `EXTERNAL` (classic) or `EXTERNAL_MANAGED` (newer). Must be allowed by your org policy. |
 | `iap_allowed_users`       | `[]`          | IAM members allowed through IAP. Defaults to the current gcloud user. |
 | `domain`                  | `null`        | Optional custom domain for the IAP Load Balancer frontend. |
+| `firestore_location`      | `nam5`        | Location for the Firestore database. Use a multi-region (e.g. `nam5`) for best availability or a regional location close to your Cloud Run region. |
+| `firestore_enable_pitr`   | `false`       | Enable point-in-time recovery for Firestore (continuous backups). Adds cost but allows restoring to any point in the last hour. |
 
 ### Outputs
 
@@ -550,16 +683,19 @@ To remove everything the deploy created (Cloud Run service, IAM, Artifact Regist
 PROJECT_ID=your-gcp-project ./scripts/cleanup.sh
 ```
 
-The [cleanup.sh](scripts/cleanup.sh) script:
+The [cleanup.sh](scripts/cleanup.sh) script runs in 8 phases:
 
-1. Runs `terraform destroy` to remove Cloud Run, IAM bindings, Artifact Registry, and disable APIs
-2. Deletes the Cloud Build logs bucket and source bucket
-3. Deletes the dedicated `sudoku-sa` service account (if created by `deploy.sh`)
-4. Removes the per-project Terraform state file
-5. Leaves the default Compute Engine SA untouched (auto-created by GCP)
+1. `terraform destroy` (auto-approved) to remove Cloud Run, IAM bindings, Artifact Registry, Firestore database, and disable APIs
+2. Deletes the Cloud Run service (if Terraform didn't get it)
+3. Deletes the Artifact Registry repo (if still exists)
+4. Deletes Cloud Build buckets (logs + source)
+5. Deletes the dedicated `sudoku-sa` service account (if created by `deploy.sh`)
+6. Removes the per-project Terraform state file
+7. API cleanup (handled by Terraform's `disable_on_destroy=true`)
+8. Deletes the Firestore database (if it still exists — Firestore deletion can be slow)
 
 > [!TIP]
-> The script asks for confirmation before deleting anything. It's safe to run even if some resources are already gone — it skips what doesn't exist.
+> The script runs without confirmation by default. Set `CONFIRM_CLEANUP=true` to require a manual `y/N` prompt before deleting anything. It's safe to run even if some resources are already gone — it skips what doesn't exist.
 
 #### Option B: Manual
 
@@ -614,6 +750,65 @@ Generates a new Sudoku puzzle and its solution.
 
 - `puzzle`: 9×9 grid where `0` represents an empty cell
 - `solution`: 9×9 grid with the complete, solved board
+
+### `GET /api/games?limit=<int>`
+
+Lists saved games (metadata only — no board/solution data).
+
+| Parameter | Type | Default | Description                    |
+|-----------|------|---------|--------------------------------|
+| `limit`   | int  | `50`    | Maximum number of games to return |
+
+**Response:**
+
+```json
+{
+  "games": [
+    {
+      "game_id": "abc123-...",
+      "difficulty": 40,
+      "progress": "12/40",
+      "mistakes": 2,
+      "elapsed": 300,
+      "completed": false,
+      "created_at": "2026-07-21T...",
+      "updated_at": "2026-07-21T..."
+    }
+  ]
+}
+```
+
+### `POST /api/games`
+
+Creates a new saved game with full state.
+
+**Request body:** Full game state JSON (puzzle, solution, board, given, notes, undoStack, redoStack, mistakes, elapsed, difficulty, completed).
+
+**Response:** `201 Created`
+
+```json
+{ "game_id": "abc123-..." }
+```
+
+### `GET /api/games/<game_id>`
+
+Retrieves a saved game's full state (including undo/redo stacks).
+
+**Response:** Full game state JSON, or `404` if not found.
+
+### `PUT /api/games/<game_id>`
+
+Updates a saved game's full state (auto-save calls this).
+
+**Request body:** Full game state JSON.
+
+**Response:** `{ "ok": true, "game_id": "..." }`, or `404` if not found.
+
+### `DELETE /api/games/<game_id>`
+
+Deletes a saved game.
+
+**Response:** `{ "ok": true, "deleted": "..." }`, or `404` if not found.
 
 ---
 
