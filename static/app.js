@@ -1176,6 +1176,7 @@
     if (e.key === 'Escape') {
       if (hintCell) cancelHintPreview();
       if (gamesOverlay.classList.contains('show')) hideGamesModal();
+      helpOverlay.classList.remove('show');
       return;
     }
 

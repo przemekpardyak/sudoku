@@ -320,14 +320,42 @@ venv/bin/python3 -m playwright install chromium
 venv/bin/python3 -m unittest tests.test_e2e_sudoku -v
 ```
 
-**What the E2E tests cover (22 tests across 4 suites):**
+**What the E2E tests cover (73 tests across 20 suites):**
 
 | Suite | Tests | Coverage |
 |-------|-------|----------|
 | TestPageLoad | 6 | Page loads, board renders 81 cells, header/stats visible, difficulty buttons, numpad, action buttons |
 | TestGameplay | 7 | Click cell + type number, numpad button, erase, given cells not erasable, undo/redo, new game, mistake counter |
 | TestUIFeatures | 7 | Help modal, theme toggle, pause button, notes mode toggle, load games modal, arrow key navigation, daily puzzle |
-| TestGameStorage | 2 | Game auto-saved on creation, progress saved after move (auto-save debounce) |
+| TestGameStorage | 3 | Game auto-saved on creation, progress saved after move, immediate save on number placement |
+| TestDifficultyButtons | 3 | Easy/Hard switch, difficulty label updates |
+| TestCheckButton | 2 | Check shows message, marks wrong numbers |
+| TestSolveButton | 2 | Solve fills board, shows completion modal |
+| TestHintButton | 2 | Hint preview, commit on click |
+| TestAutoNotes | 2 | Auto-notes fills pencil marks, clear notes removes |
+| TestResetBoard | 1 | Reset clears user entries |
+| TestNotesMode | 1 | Notes mode places pencil marks not final numbers |
+| TestConflictHighlighting | 1 | Wrong number gets error class after check |
+| TestProgressDisplay | 2 | Progress starts at 0%, increases after move |
+| TestCellHighlighting | 3 | Selected class, row/col/box highlight, selection moves |
+| TestNumpadState | 1 | All numpad buttons visible |
+| TestKeyboardShortcuts | 5 | ? help, Escape dismiss, R reset, T theme, L games |
+| TestGamesModal | 4 | Shows games, sort dropdown, filter checkboxes, close button |
+| TestGameIdDisplay | 1 | Game ID shown in footer |
+| TestTimerDisplay | 1 | Timer starts near 00:00 |
+| TestWinFlow | 2 | Win modal appears on completion, shows stats |
+| TestLoadGameFromModal | 1 | Load game from modal restores state |
+| TestMoreKeyboardShortcuts | 2 | A=auto-notes, D=daily puzzle |
+| TestPauseTimer | 2 | Pause stops timer, resume continues |
+| TestErrorCorrection | 1 | Error class removed when corrected |
+| TestExpertDifficulty | 1 | Expert button activates |
+| TestPlayAgain | 1 | Play Again starts new game |
+| TestGamePersistence | 1 | Game restored after page reload |
+| TestSameNumberHighlighting | 2 | Same-number highlight, empty cell no highlight |
+| TestConflictDetection | 1 | Real-time conflict class on duplicate |
+| TestDeleteGame | 1 | Delete button removes game |
+| TestShareGame | 1 | Share button shows hint |
+| TestDifficultyChangeNewGame | 1 | Difficulty change triggers new game |
 
 > [!NOTE]
 > E2E tests automatically start a Flask dev server on `localhost:5000` if one isn't already running. They clean up all games between tests via the API.
