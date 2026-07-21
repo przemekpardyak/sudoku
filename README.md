@@ -139,6 +139,7 @@ sudoku/
 │   ├── deploy.sh           # One-command deploy script (infra → build → deploy)
 │   ├── cleanup.sh          # One-command teardown script (8 phases)
 │   ├── run_tests.sh        # Bash test runner (with --watch, --quiet, --fail-fast)
+│   ├── run_e2e_tests.sh   # E2E Playwright UI test runner (with --headful)
 │   └── watch_tests.py      # Python file watcher for auto-running tests
 └── terraform/
     ├── providers.tf        # Google provider config + enabled APIs
@@ -168,6 +169,7 @@ sudoku/
 | `scripts/deploy.sh`    | One-command deploy: infra bootstrap → Cloud Build → Cloud Run deploy |
 | `scripts/cleanup.sh`   | One-command teardown: 8 phases including Firestore cleanup |
 | `scripts/run_tests.sh` | Bash test runner with --watch, --quiet, --fail-fast flags |
+| `scripts/run_e2e_tests.sh` | E2E Playwright UI test runner (with --headful flag) |
 | `run_all_tests.py`     | Python test runner: auto-discovers test_*.py files |
 | `terraform/firestore.tf` | Firestore database (Native mode) + API enablement |
 | `terraform/cloud_run.tf` | Cloud Run service, IAM, Firestore env vars |
@@ -294,7 +296,41 @@ A file watcher script is included that monitors source files and automatically r
 venv/bin/python3 scripts/watch_tests.py
 ```
 
-The watcher monitors: `sudoku.py`, `app.py`, `storage.py`, `test_*.py`, and `requirements.txt`.
+The watcher monitors: `sudoku.py`, `app.py`, `storage.py`, `tests/test_*.py`, and `requirements.txt`.
+
+### E2E UI tests (Playwright)
+
+In addition to API-level tests, the project includes end-to-end UI tests powered by [Playwright](https://playwright.dev/). These tests launch a real headless Chromium browser, load the game page, and interact with it exactly like a user would — clicking cells, typing numbers, opening modals, toggling the theme, and verifying DOM state.
+
+**Prerequisites:**
+
+```bash
+# Install Playwright + Chromium (one-time setup)
+venv/bin/pip install playwright requests --index-url https://pypi.org/simple/
+venv/bin/python3 -m playwright install chromium
+```
+
+**Run E2E tests:**
+
+```bash
+# Using the dedicated runner (auto-installs deps, starts Flask, runs tests)
+./scripts/run_e2e_tests.sh
+
+# Run directly with unittest (Flask app must be running or will auto-start)
+venv/bin/python3 -m unittest tests.test_e2e_sudoku -v
+```
+
+**What the E2E tests cover (22 tests across 4 suites):**
+
+| Suite | Tests | Coverage |
+|-------|-------|----------|
+| TestPageLoad | 6 | Page loads, board renders 81 cells, header/stats visible, difficulty buttons, numpad, action buttons |
+| TestGameplay | 7 | Click cell + type number, numpad button, erase, given cells not erasable, undo/redo, new game, mistake counter |
+| TestUIFeatures | 7 | Help modal, theme toggle, pause button, notes mode toggle, load games modal, arrow key navigation, daily puzzle |
+| TestGameStorage | 2 | Game auto-saved on creation, progress saved after move (auto-save debounce) |
+
+> [!NOTE]
+> E2E tests automatically start a Flask dev server on `localhost:5000` if one isn't already running. They clean up all games between tests via the API.
 
 ### Test output example
 
