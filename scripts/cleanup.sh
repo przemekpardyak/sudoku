@@ -117,8 +117,8 @@ fi
 # --- Phase 2: Delete Cloud Run service (if still exists) ----------------------
 echo
 echo "▶ Phase 2: Deleting Cloud Run service (if Terraform didn't get it)..."
-if gcloud run services describe "${APP_NAME}" --region="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
-  gcloud run services delete "${APP_NAME}" --region="${REGION}" --project="${PROJECT_ID}" --quiet 2>&1
+if timeout 30 gcloud run services describe "${APP_NAME}" --region="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  timeout 60 gcloud run services delete "${APP_NAME}" --region="${REGION}" --project="${PROJECT_ID}" --quiet 2>&1
   DELETED+=("Cloud Run service: ${APP_NAME}")
 else
   SKIPPED+=("Cloud Run service (already gone)")
@@ -127,8 +127,8 @@ fi
 # --- Phase 3: Delete Artifact Registry repo (if still exists) ----------------
 echo
 echo "▶ Phase 3: Deleting Artifact Registry repo (if still exists)..."
-if gcloud artifacts repositories describe "${APP_NAME}-repo" --location="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
-  gcloud artifacts repositories delete "${APP_NAME}-repo" --location="${REGION}" --project="${PROJECT_ID}" --quiet 2>&1
+if timeout 30 gcloud artifacts repositories describe "${APP_NAME}-repo" --location="${REGION}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  timeout 60 gcloud artifacts repositories delete "${APP_NAME}-repo" --location="${REGION}" --project="${PROJECT_ID}" --quiet 2>&1
   DELETED+=("Artifact Registry repo: ${APP_NAME}-repo")
 else
   SKIPPED+=("Artifact Registry repo (already gone)")
