@@ -266,3 +266,45 @@ Instead of a separate page, the reference library will be a tab/view within the 
 | 9 | (latest) | Lesson recommendation endpoint + UI |
 
 **Total tutorial test count:** 38 (11 content + 9 tips + 6 achievements + 5 recommendation + 7 E2E)
+
+### 2026-07-22 07:08 UTC — Status Summary
+
+**Tutorial System Feature Inventory:**
+
+| Feature | Status | Details |
+|---------|--------|---------|
+| Lesson content (13 lessons) | ✅ | 4 beginner, 3 intermediate, 3 advanced, 3 expert |
+| Tutorial overlay UI | ✅ | Modal with sidebar (Lessons/Reference tabs) + content area |
+| Interactive practice boards | ✅ | Mini board with keyboard input, highlight, feedback |
+| Progress tracking | ✅ | Server-side (Firestore), per-lesson + per-step |
+| Progress dashboard | ✅ | Completion %, per-level breakdown, progress bar |
+| Technique tips (10 tips) | ✅ | In-game Tip button, random tip display |
+| Reference library | ✅ | Browse techniques by level, detail view |
+| Achievements (7 badges) | ✅ | First Steps → Completionist |
+| Lesson recommendation | ✅ | "Continue Learning" button, smart next-lesson suggestion |
+| Contextual help (Tip button) | ✅ | 💡 Tip button in game action panel |
+| Tip-to-lesson link | ✅ | "Learn This" button jumps from tip to full lesson |
+| E2E tests | ✅ | 7 tests covering overlay, navigation, practice |
+| Unit tests | ✅ | 31 tests covering all API endpoints |
+| Deployed | ✅ | ppardyak-cad, revision sudoku-00018-t86 |
+
+**Total test count:** 38 tutorial tests + existing app tests
+
+**Files created:**
+- `tutorial.py` — tutorial module (content, tips, stats, achievements, recommendation)
+- `tutorials/content.json` — 13 lessons with steps and practice puzzles
+- `tests/test_tutorial.py` — 11 content/progress tests
+- `tests/test_tutorial_tips.py` — 9 tips/stats tests
+- `tests/test_tutorial_achievements.py` — 6 achievement tests
+- `tests/test_tutorial_recommend.py` — 5 recommendation tests
+- `tests/test_tutorial_e2e.py` — 7 E2E UI tests
+- `TUTORIAL_SPEC.md` — product specification
+- `TUTORIAL_DEV_LOG.md` — this development log
+
+**What could come next (if user wants to continue):**
+- Practice puzzles for intermediate/advanced techniques (pre-built boards that demonstrate the pattern)
+- "Tutorial mode" on the real game board (highlight cells, guide user through solving)
+- Spaced repetition — track which techniques user struggles with and recommend review
+- Social features — share achievements, leaderboard for tutorial completion
+- Video/animation demonstrations of techniques
+- Difficulty assessment — test user's skill level and recommend starting point
