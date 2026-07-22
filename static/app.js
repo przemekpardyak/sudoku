@@ -1735,9 +1735,6 @@
       const step = this.currentLesson.steps[this.currentStepIndex];
       if (!step) return;
 
-      document.getElementById('tutorialStepTitle').textContent = step.title;
-      document.getElementById('tutorialStepDescription').textContent = step.description;
-
       // Progress bar
       const total = this.currentLesson.steps.length;
       const pct = ((this.currentStepIndex + 1) / total) * 100;
