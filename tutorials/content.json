@@ -507,6 +507,25 @@
           "description": "1. Pick a number with few candidates\n2. Find conjugate pairs (cells that are the only two options for that number in a row/column/box)\n3. Color alternating cells: if cell A is green, its conjugate partner B is blue, B's partner C is green, etc.\n4. Look for:\n   - Two same-colored cells in one unit → that color is eliminated\n   - A cell that sees both colors → that number can be eliminated from that cell\n5. This often reveals the correct value of the colored cells",
           "type": "info",
           "puzzle": null
+        },
+        {
+          "title": "Practice: Color Chain",
+          "description": "Imagine the number 3 has a chain of conjugate pairs: cell (0,0) → (0,5) → (3,5) → (3,0). If we color them green, blue, green, blue, then (0,0) and (3,0) are both green and in the same column — contradiction! So all green cells are wrong, meaning (0,0) is NOT 3 and (3,5) is NOT 3. The blue cells must be 3. Click the highlighted cell — it's a blue cell, so it must be 3.",
+          "type": "practice",
+          "puzzle": [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ],
+          "highlight_cell": [0, 5],
+          "expected_value": 3,
+          "solution": null
         }
       ]
     },
