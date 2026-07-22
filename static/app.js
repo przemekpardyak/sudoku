@@ -1785,6 +1785,8 @@
           let classes = 'tutorial-mini-cell';
           if (isGiven) classes += ' given';
           if (isHighlight) classes += ' highlight-cell';
+          if (c % 3 === 2 && c !== 8) classes += ' box-right';
+          if (r % 3 === 2 && r !== 8) classes += ' box-bottom';
           html += `<div class="${classes}" data-row="${r}" data-col="${c}">${val !== 0 ? val : ''}</div>`;
         }
       }
