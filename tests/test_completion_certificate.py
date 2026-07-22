@@ -116,6 +116,30 @@ class TestCompletionCertificate(unittest.TestCase):
         self.assertEqual(performance, 'completed',
                          f"Expected 'completed' rating for 5 mistakes + 500s, got '{performance}'")
 
+    def test_certificate_difficulty_label_easy(self):
+        """Difficulty 25 should map to 'Easy' label."""
+        game_id = self._create_completed_game(difficulty=25)
+        res = self.client.get(f'/api/games/{game_id}/certificate')
+        self.assertEqual(res.get_json()['difficulty_label'], 'Easy')
+
+    def test_certificate_difficulty_label_medium(self):
+        """Difficulty 35 should map to 'Medium' label."""
+        game_id = self._create_completed_game(difficulty=35)
+        res = self.client.get(f'/api/games/{game_id}/certificate')
+        self.assertEqual(res.get_json()['difficulty_label'], 'Medium')
+
+    def test_certificate_difficulty_label_hard(self):
+        """Difficulty 45 should map to 'Hard' label."""
+        game_id = self._create_completed_game(difficulty=45)
+        res = self.client.get(f'/api/games/{game_id}/certificate')
+        self.assertEqual(res.get_json()['difficulty_label'], 'Hard')
+
+    def test_certificate_difficulty_label_expert(self):
+        """Difficulty 50 should map to 'Expert' label."""
+        game_id = self._create_completed_game(difficulty=50)
+        res = self.client.get(f'/api/games/{game_id}/certificate')
+        self.assertEqual(res.get_json()['difficulty_label'], 'Expert')
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

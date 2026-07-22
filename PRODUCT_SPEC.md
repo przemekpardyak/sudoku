@@ -32,7 +32,7 @@
 - **Storage:** Google Cloud Firestore (production) / in-memory (dev)
 - **Auth:** Session-based, `hashlib.pbkdf2_hmac` password hashing (no external deps)
 - **Deployment:** Google Cloud Run + Terraform IaC
-- **Tests:** `unittest` + Playwright (E2E), 991 tests total
+- **Tests:** `unittest` + Playwright (E2E), 1014 tests total (896 API + 113 E2E + 5 version)
 
 ### Key Files
 
@@ -390,7 +390,8 @@ Returns metadata only (no board/solution/stacks):
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/` | GET | Renders `index.html` |
+| `/` | GET | Renders `index.html` with `app_version` template variable |
+| `/api/version` | GET | Returns `{version, git_commit, deployed_at}` — app version info |
 
 ### 6.2 Auth Endpoints
 
@@ -427,6 +428,10 @@ See [§2.4](#24-auth-api-endpoints).
 | `/api/games/<game_id>/export` | GET | — | `{share_code: "base64..."}` | Strips game_id, created_at, updated_at |
 | `/api/games/compare` | GET | `a`, `b` (game IDs) | `{game_a: {...}, game_b: {...}, differences: {...}}` | Compares difficulty, elapsed, mistakes, hintsUsed, rating |
 | `/api/games/import` | POST | `{share_code: "base64..."}` | `201: {game_id}` | `400` if invalid code |
+
+> **Note:** Fields like `favorite`, `tags`, `notes`, `archived`, and `rating` are also settable via the generic `PUT /api/games/{game_id}` merge endpoint. There are dedicated endpoints for `rate` and `archive` for convenience, but `favorite` and `tags` are only settable via PUT merge.
+
+> **Note:** `migrate_games_to_user(user_id)` is a storage-layer method (in `storage.py`) that assigns `user_id` to games without one. It has no API endpoint — it's used internally during user creation/migration.
 
 ### 6.6 Solver/Validator
 
@@ -812,7 +817,7 @@ PROJECT_ID=ppardyak-cad SKIP_AUDITS=true TF_ARGS="" ./scripts/deploy.sh
 | E2E | Browser tests (Playwright) | 1 module: test_e2e_sudoku |
 | Auth | Auth unit tests | 1 module: test_auth |
 
-**Total: 991 tests (888 API + 103 E2E), 1 skipped**
+**Total: 1014 tests (896 API + 113 E2E + 5 version), 1 skipped**
 
 ### 10.2 Test Runner
 
@@ -873,6 +878,7 @@ venv/bin/python3 run_all_tests.py --category e2e
 | `FIRESTORE_COLLECTION` | `games` | `storage.py` | Firestore collection name |
 | `PORT` | `8080` (Cloud Run) / `5000` (dev) | `Dockerfile`, `app.py` | Server port |
 | `SUDOKU_RUN_SLOW` | (unset) | `tests/` | Forces slow 17-clue solver test |
+| `DEPLOYED_AT` | (unset) | `app.py` | Deployment timestamp, returned by `/api/version` |
 
 ---
 

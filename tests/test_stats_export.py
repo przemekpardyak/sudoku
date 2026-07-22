@@ -131,6 +131,18 @@ class TestStatsExport(unittest.TestCase):
         self.assertIn('elapsed', entry)
         self.assertIn('mistakes', entry)
 
+    def test_exported_at_is_iso_timestamp(self):
+        """exported_at should be a valid ISO timestamp, not the literal string 'null'."""
+        self._create_game(elapsed=50, difficulty=30)
+        res = self.client.get('/api/stats/export')
+        exported_at = res.get_json()['exported_at']
+        self.assertNotEqual(exported_at, 'null',
+                            "exported_at should not be the literal string 'null'")
+        self.assertIsInstance(exported_at, str)
+        # Should be parseable as an ISO timestamp
+        from datetime import datetime
+        datetime.fromisoformat(exported_at)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

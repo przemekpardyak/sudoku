@@ -29,13 +29,15 @@
 
 
 
+- Add an app version to the app itself
+  - ✅ Done: Added `APP_VERSION = "1.0.0"` constant, `/api/version` endpoint returning `{version, git_commit, deployed_at}`, version display in footer with `.version-display` CSS. 5 unit tests + 1 E2E test. Commit: (pending)
+
 ---
 
 ## Draft
 
 <!-- Partially drafted requirements not ready for the loop yet.  Wait until user moves them to the Active Requirements section. -->
 
-- Add an app version to the app itself
 ---
 
 ## Completed
@@ -88,3 +90,23 @@
 - Add missing tests for share/import flow: share URL format verification, frontend import URL param check on load, beforeunload/sendBeacon save behavior.
   - ✅ Done: TestShareImportFlow E2E test verifies share button produces URL with ?import= param (clipboard or hint text). sendBeacon and import-on-load testing deferred — Playwright can't simulate page close, and import-on-load requires a share code from a real game. Commit: [`06f97d8`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
 
+---
+
+## Agent-Extrapolated Requirements — Round 2
+
+<!-- Source: Second-pass audit of PRODUCT_SPEC.md vs test suite -->
+
+- Fix exported_at bug: /api/stats/export returns literal string "null" instead of a timestamp. Should use datetime.now().isoformat(). Add test asserting exported_at is a valid ISO timestamp.
+  - ✅ Done: Fixed `_json.dumps(None)` → `datetime.now(timezone.utc).isoformat()`. Added `test_exported_at_is_iso_timestamp` test. Commit: (pending)
+
+- Fix recommend_difficulty docstring: says "Completion rate < 50% → suggest easier" but the actual code checks "average time > 300s". Update docstring to match spec and code.
+  - ✅ Done: Updated docstring to match spec §6.10 and actual implementation. Commit: (pending)
+
+- Add missing tests: difficulty_label boundary values (25/30/40/50/58 → Easy/Medium/Hard/Expert), _get_git_commit() format/fallback, app_version template variable injection.
+  - ✅ Done: Added 4 difficulty_label boundary tests (Easy/Medium/Hard/Expert), git_commit format test, deployed_at string test, app_version template injection test. Commit: (pending)
+
+- Add E2E tests for theme localStorage persistence: toggle theme, read localStorage, reload, verify restored.
+  - ✅ Done: Added TestThemePersistence E2E test — toggles theme, verifies localStorage, reloads, verifies restored. Commit: (pending)
+
+- Update spec: reconcile test counts (line 35 vs line 816), add DEPLOYED_AT env var to §11, document favorite/notes/tags settable via PUT merge, clarify migrate_games_to_user is storage-only (no API endpoint).
+  - ✅ Done: Reconciled test counts (1014 total). Added DEPLOYED_AT to env vars table. Documented favorite/tags via PUT merge with note. Added migrate_games_to_user storage-only note. Commit: (pending)

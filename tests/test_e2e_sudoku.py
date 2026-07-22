@@ -2660,6 +2660,60 @@ class TestShareImportFlow(TestSudokuE2E):
                 pass
 
 
+class TestAppVersion(TestSudokuE2E):
+    """Tests for app version display."""
+
+    def test_version_shown_in_footer(self):
+        """Version should be visible in the footer."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector(".version-display")
+        version_text = self.page.text_content(".version-display")
+        self.assertTrue(version_text.startswith("v"),
+                        f"Version should start with 'v', got: {version_text}")
+        self.assertGreater(len(version_text), 1,
+                           "Version should have more than just 'v'")
+
+
+class TestThemePersistence(TestSudokuE2E):
+    """Tests for theme persistence to localStorage across page reload."""
+
+    def test_theme_persists_to_localStorage_and_survives_reload(self):
+        """Toggle theme, verify localStorage, reload, verify restored."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(500)
+
+        # Get initial theme state — theme class is on documentElement (<html>)
+        html_class = self.page.get_attribute("html", "class") or ""
+        initial_theme = "light" if "light" in html_class else "dark"
+
+        # Toggle theme by pressing 't'
+        self.page.keyboard.press("t")
+        self.page.wait_for_timeout(300)
+
+        # Verify theme changed
+        html_class = self.page.get_attribute("html", "class") or ""
+        new_theme = "light" if "light" in html_class else "dark"
+        self.assertNotEqual(new_theme, initial_theme,
+                            "Theme should have toggled")
+
+        # Verify localStorage has the new theme
+        stored = self.page.evaluate("() => localStorage.getItem('sudoku_theme')")
+        self.assertEqual(stored, new_theme,
+                        f"localStorage should have '{new_theme}', got '{stored}'")
+
+        # Reload page
+        self.page.reload()
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(500)
+
+        # Verify theme was restored from localStorage
+        html_class = self.page.get_attribute("html", "class") or ""
+        restored_theme = "light" if "light" in html_class else "dark"
+        self.assertEqual(restored_theme, new_theme,
+                        f"Theme should be restored to '{new_theme}' after reload, got '{restored_theme}'")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
 

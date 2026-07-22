@@ -558,6 +558,13 @@ body::before {
   font-size: 12px;
 }
 
+.version-display {
+  margin-left: 12px;
+  opacity: 0.6;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+
 /* Modal overlay */
 .overlay {
   position: fixed;

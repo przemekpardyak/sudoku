@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json as _json
 import os
+from datetime import datetime, timezone
 
 from flask import Flask, jsonify, render_template, request, session
 
@@ -13,6 +14,24 @@ from sudoku import generate_puzzle
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "sudoku-dev-secret-key-change-in-prod")
 
+# App version
+APP_VERSION = "1.0.0"
+
+
+def _get_git_commit() -> str:
+    """Get short git commit hash, or 'unknown' if not available."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True, timeout=5,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+        )
+        return result.stdout.strip() if result.returncode == 0 else "unknown"
+    except Exception:
+        return "unknown"
+
+
 # Ensure default user exists on import
 ensure_default_user()
 
@@ -20,7 +39,17 @@ ensure_default_user()
 @app.route("/")
 def index() -> str:
     """Render the main game page."""
-    return render_template("index.html")
+    return render_template("index.html", app_version=APP_VERSION)
+
+
+@app.route("/api/version")
+def version() -> object:
+    """Return app version info."""
+    return jsonify({
+        "version": APP_VERSION,
+        "git_commit": _get_git_commit(),
+        "deployed_at": os.environ.get("DEPLOYED_AT", ""),
+    })
 
 
 def get_current_user_id() -> str | None:
@@ -826,10 +855,10 @@ def recommend_difficulty() -> object:
     """Recommend a difficulty level based on player's past performance.
 
     Logic:
-    - No completed games: suggest 30 (medium)
-    - Best time < 60s on current difficulty: suggest harder
-    - Completion rate < 50% on current difficulty: suggest easier
-    - Otherwise: suggest current difficulty
+    - No completed games: suggest 30 (easy)
+    - Best time < 60s on most-used difficulty: suggest harder (most_used + 10, max 58)
+    - Average time > 300s on most-used difficulty: suggest easier (most_used - 10, min 20)
+    - Otherwise: suggest current most-used difficulty
 
     Returns:
         JSON with recommended difficulty and reasoning.
@@ -1093,7 +1122,7 @@ def export_stats() -> object:
     ]
 
     return jsonify({
-        "exported_at": _json.dumps(None),  # Will be set by jsonify
+        "exported_at": datetime.now(timezone.utc).isoformat(),
         "summary": {
             "total_games": total,
             "completed_games": completed_count,
