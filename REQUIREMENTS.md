@@ -30,6 +30,8 @@
 - Lessons not working. I entered the learn mode.  I see a lesson "Grid".  There's a description. Nothing visual, which may be by design, though I'd prefer if something meaningful is always displayed below.  Real issue: the next button doesn't work.  Fully test all lesson flows and make sure they work.
 
 
+- each tip should include examples that can be reviewed by the user.  These should be a small sample puzzle and the solution to it in the lesson itself, so that the user can see what it looks like.  I  think it makes sense to always have the solution for each tip displayed in the lesson.  Examples should be relevant to the tip showing different aspects of it.  Each example should be first show as an illustation with whatever explanations and visual overlays.  User should be able to navigate through multiple examples.  User should be able to turn the example into a live board they could play with.  It should be visually clear they are playing with an example.  When done, they should be able to go back to the example and resume working on a tip.  Once done with the tip, they should go back to wherever they were.  Any live board created from an example should be saved and named clearly as an example.
+
 - login popup changes color unexpectedly.  I refreshed the landing page.  Got the loging popup.  I started typing.  It changed colors from brigt to dark . Later vice versa.  Stick with a single theme. Pick a default (I prefer the dark one).  Then remember the last theme used 
   - 🚧 In progress
   - **Why:** Login overlay flashes between light/dark during typing — likely a race condition between theme load from localStorage and CSS rendering. Bad UX.
@@ -48,7 +50,7 @@
 
 <!-- Partially drafted requirements not ready for the loop yet.  Wait until user moves them to the Active Requirements section. -->
 
-- each tip should include examples that can be reviewed by the user.  These should be a small sample puzzle and the solution to it in the lesson itself, so that the user can see what it looks like.  I  think it makes sense to always have the solution for each tip displayed in the lesson.  
+
 
 - flashing colors still happened once when I tried to log in
 

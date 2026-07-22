@@ -45,8 +45,12 @@ class TestTutorialUI(TestSudokuE2E):
         self.page.goto(APP_URL)
         self.page.click("#learnBtn")
         self.page.wait_for_selector("#tutorialNextBtn")
+        # Wait for lesson content to actually load
+        self.page.wait_for_selector("#tutorialContent h2")
+        self.page.wait_for_timeout(500)
         # Get initial step title
         initial_title = self.page.text_content("#tutorialContent h2")
+        self.assertTrue(len(initial_title) > 0, "Initial step title should not be empty")
         # Click Next
         self.page.click("#tutorialNextBtn")
         self.page.wait_for_timeout(500)
@@ -58,7 +62,8 @@ class TestTutorialUI(TestSudokuE2E):
                             "Step title should change after clicking Next")
         # Click Previous
         self.page.click("#tutorialPrevBtn")
-        self.page.wait_for_timeout(300)
+        self.page.wait_for_timeout(500)
+        self.page.wait_for_selector("#tutorialContent h2")
         prev_title = self.page.text_content("#tutorialContent h2")
         self.assertEqual(initial_title, prev_title,
                          "Step title should return to original after Previous")
