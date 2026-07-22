@@ -68,10 +68,12 @@ Each lesson follows this pattern:
 | Batch | Feature | Status |
 |-------|---------|--------|
 | 1 | Tutorial framework + Rules lesson | ✅ Done |
-| 2 | Scanning & Naked Singles | ✅ Done (in Batch 1) |
-| 3 | Hidden Singles + Progress API | ✅ Done (in Batch 1) |
-| 4 | Tutorial UI + In-game help | 🚧 Next |
-| 5 | Intermediate techniques | ⏳ Pending |
-| 6 | Reference library | ⏳ Pending |
-| 7 | Advanced techniques + Achievements | ⏳ Pending |
-| 8+ | Expert techniques | ⏳ Pending |
+| 2 | E2E tests + Intermediate lessons | ✅ Done |
+| 3 | Advanced + Expert lessons | ✅ Done |
+| 4 | Technique tips + Stats + In-game help | ✅ Done |
+| 5 | Progress dashboard in sidebar | ✅ Done |
+| 6 | Reference library with tabs | ✅ Done |
+| 7 | Achievements system | ✅ Done |
+| 8 | Practice puzzles for advanced techniques | 🚧 Next |
+| 9 | Tutorial-to-game integration | ⏳ Pending |
+| 10 | Streak tracking + daily challenges | ⏳ Pending |
