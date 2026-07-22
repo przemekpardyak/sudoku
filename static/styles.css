@@ -1114,3 +1114,33 @@ body::before {
   background: var(--accent-bg) !important;
   outline: 2px solid var(--accent);
 }
+
+/* Tutorial tabs */
+.tutorial-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tutorial-tab {
+  flex: 1;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-mute);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tutorial-tab:hover {
+  color: var(--text);
+}
+
+.tutorial-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}

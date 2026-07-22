@@ -167,3 +167,17 @@ Starting Batch 1 now.
 - Per-level counts help users understand where they are in their learning journey
 
 **Commits:** Batch 4 + 5 combined commit
+
+### 2026-07-22 06:58 UTC — Batch 6: Reference Library + Lesson Search
+
+**Design decision: Reference Library as a mode within the tutorial overlay**
+Instead of a separate page, the reference library will be a tab/view within the tutorial overlay — switching between "Lessons" (guided) and "Reference" (lookup). This keeps the user in the same UI context.
+
+**What was built:**
+- Reference library view: browse all techniques by name/level
+- Technique detail view: full description, how_to_find, link to lesson
+- Tab switching: Lessons vs Reference in the tutorial sidebar
+- API: `/api/tutorials/tips` already serves all technique data
+- Frontend: tab system in the tutorial overlay
+
+**Test results:** All existing 27 tests pass (no new tests needed — reference uses existing tips API)

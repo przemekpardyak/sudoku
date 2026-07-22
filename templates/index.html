@@ -230,7 +230,14 @@
   <!-- Tutorial overlay -->
   <div class="overlay" id="tutorialOverlay">
     <div class="modal tutorial-modal">
-      <div class="tutorial-sidebar" id="tutorialLessonList"></div>
+      <div class="tutorial-sidebar" id="tutorialLessonList">
+        <div class="tutorial-tabs">
+          <button class="tutorial-tab active" id="tabLessons" data-tab="lessons">Lessons</button>
+          <button class="tutorial-tab" id="tabReference" data-tab="reference">Reference</button>
+        </div>
+        <div id="sidebarLessons"></div>
+        <div id="sidebarReference" style="display:none;"></div>
+      </div>
       <div class="tutorial-content" id="tutorialContent">
         <div class="tutorial-step" id="tutorialStep">
           <h2 id="tutorialStepTitle"></h2>

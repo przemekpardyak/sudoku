@@ -1525,11 +1525,71 @@
       document.getElementById('tutorialCloseBtn').addEventListener('click', () => this.close());
       document.getElementById('tutorialPrevBtn').addEventListener('click', () => this.prevStep());
       document.getElementById('tutorialNextBtn').addEventListener('click', () => this.nextStep());
+      // Tab switching
+      document.getElementById('tabLessons').addEventListener('click', () => this.switchTab('lessons'));
+      document.getElementById('tabReference').addEventListener('click', () => this.switchTab('reference'));
       // Load progress
       try {
         const res = await fetch('/api/tutorials/progress');
         if (res.ok) this.progress = await res.json();
       } catch (e) { /* not logged in or no progress yet */ }
+    },
+
+    switchTab(tab) {
+      document.getElementById('tabLessons').classList.toggle('active', tab === 'lessons');
+      document.getElementById('tabReference').classList.toggle('active', tab === 'reference');
+      document.getElementById('sidebarLessons').style.display = tab === 'lessons' ? '' : 'none';
+      document.getElementById('sidebarReference').style.display = tab === 'reference' ? '' : 'none';
+      if (tab === 'reference') this.renderReference();
+    },
+
+    async renderReference() {
+      const sidebar = document.getElementById('sidebarReference');
+      try {
+        const res = await fetch('/api/tutorials/tips');
+        const data = await res.json();
+        const tips = data.tips;
+        const levels = { beginner: [], intermediate: [], advanced: [], expert: [] };
+        tips.forEach(t => { if (levels[t.level]) levels[t.level].push(t); });
+        let html = '<h3>📖 Techniques</h3>';
+        for (const [level, techs] of Object.entries(levels)) {
+          if (techs.length === 0) continue;
+          html += `<div class="tutorial-level-section">`;
+          html += `<p class="tutorial-level-title">${level.charAt(0).toUpperCase() + level.slice(1)}</p>`;
+          techs.forEach(t => {
+            html += `<button class="tutorial-lesson-item" data-technique="${t.technique}">${t.title}</button>`;
+          });
+          html += `</div>`;
+        }
+        sidebar.innerHTML = html;
+        sidebar.querySelectorAll('.tutorial-lesson-item').forEach(btn => {
+          btn.addEventListener('click', () => this.showTechnique(btn.dataset.technique));
+        });
+      } catch (e) { console.error('Failed to load reference:', e); }
+    },
+
+    async showTechnique(techniqueId) {
+      try {
+        const res = await fetch(`/api/tutorials/techniques/${techniqueId}`);
+        if (!res.ok) return;
+        const t = await res.json();
+        const contentEl = document.getElementById('tutorialContent');
+        contentEl.innerHTML = `
+          <div class="tutorial-step">
+            <div class="tutorial-progress-bar"><div class="tutorial-progress-bar-fill" style="width:100%"></div></div>
+            <h2>${t.title}</h2>
+            <div style="font-size:12px; color:var(--text-mute); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px;">${t.level} technique</div>
+            <div style="font-size:15px; line-height:1.7; color:var(--text-mute);">${t.description}</div>
+            <div style="margin-top:16px; padding:14px; background:var(--highlight); border-radius:8px; font-size:14px;">
+              <strong>How to find:</strong> ${t.how_to_find}
+            </div>
+            ${t.lesson_id ? `<div style="margin-top:16px;"><button class="action-btn primary" onclick="tutorial.loadLesson('${t.lesson_id}')">📖 Go to Lesson</button></div>` : ''}
+            <div class="tutorial-actions">
+              <button class="action-btn" id="tutorialCloseBtn2">Close</button>
+            </div>
+          </div>`;
+        document.getElementById('tutorialCloseBtn2').addEventListener('click', () => this.close());
+      } catch (e) { console.error('Failed to load technique:', e); }
     },
 
     async open() {
@@ -1556,7 +1616,7 @@
     },
 
     async renderSidebar() {
-      const sidebar = document.getElementById('tutorialLessonList');
+      const sidebar = document.getElementById('sidebarLessons');
       const levels = { beginner: [], intermediate: [], advanced: [], expert: [] };
       this.lessons.forEach(l => {
         if (levels[l.level]) levels[l.level].push(l);
