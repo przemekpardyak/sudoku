@@ -329,6 +329,156 @@
           "puzzle": null
         }
       ]
+    },
+    {
+      "id": "x-wing",
+      "title": "X-Wing Technique",
+      "level": "advanced",
+      "description": "When a number can only go in two positions in two different rows (or columns), and those positions align, you can eliminate that number from other cells in the intersecting columns (or rows).",
+      "order": 8,
+      "steps": [
+        {
+          "title": "What is an X-Wing?",
+          "description": "An X-Wing is a pattern where a specific number has exactly two candidate positions in each of two rows, and those positions are in the same two columns. This forms a rectangle (the 'X-Wing'). Since the number must appear in both rows, and it can only go in those two columns, the number is locked to those four cells. You can eliminate it from all other cells in those two columns.\n\nThe name comes from the X-shaped pattern formed by the two rows and two columns intersecting.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "The X-Wing Rule",
+          "description": "If number N can only go in columns C1 and C2 in both row R1 and row R2 (exactly two candidates per row), then N must be at (R1,C1) or (R1,C2), AND at (R2,C1) or (R2,C2). This means N is locked to these four cells. Eliminate N from all other cells in columns C1 and C2.\n\nThe same logic works with rows and columns swapped.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Why X-Wing is Powerful",
+          "description": "X-Wing is a 'fish' pattern — the simplest of the fish family (which includes Swordfish and Jellyfish). It eliminates candidates across entire rows/columns, often breaking through tough puzzles that scanning and pairs can't solve.\n\nKey tip: Always look for X-Wings when a number has very few candidates remaining in a row or column.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "swordfish",
+      "title": "Swordfish Technique",
+      "level": "advanced",
+      "description": "An extension of X-Wing using three rows and three columns instead of two.",
+      "order": 9,
+      "steps": [
+        {
+          "title": "What is a Swordfish?",
+          "description": "A Swordfish is like an X-Wing but with three rows and three columns instead of two. If a number has at most three candidate positions in each of three rows, and all those positions fall within the same three columns, then you can eliminate that number from all other cells in those three columns.\n\nThe pattern looks like a 3×3 grid of candidate cells (though not all 9 need to be filled — a minimum of 3 per row is needed).",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "When to Look for Swordfish",
+          "description": "Swordfish patterns are rare but extremely powerful. Look for them when:\n- A number has very few candidates remaining\n- You see X-Wing-like alignment across three rows/columns\n- The puzzle is hard (difficulty 50+)\n\nMost puzzles won't need Swordfish, but when they do, it's often the only way forward without guessing.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "xy-wing",
+      "title": "XY-Wing Technique",
+      "level": "advanced",
+      "description": "A three-cell pattern that eliminates candidates based on a chain of bivalue cells.",
+      "order": 10,
+      "steps": [
+        {
+          "title": "What is an XY-Wing?",
+          "description": "An XY-Wing involves three cells: a pivot cell with candidates {X, Y}, and two wing cells — one with {X, Z} and one with {Y, Z}. The pivot sees both wings. Regardless of whether the pivot is X or Y, one of the wings must be Z. Therefore, any cell that sees BOTH wings can have Z eliminated.\n\nThe 'sees' relationship means sharing a row, column, or box.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Finding the Pivot",
+          "description": "To find an XY-Wing:\n1. Find a bivalue cell (only 2 candidates) — this is your pivot, with candidates {X, Y}\n2. Find another bivalue cell that shares a unit with the pivot and has {X, Z} — this is wing 1\n3. Find a third bivalue cell that shares a unit with the pivot and has {Y, Z} — this is wing 2\n4. Any cell that sees BOTH wing 1 and wing 2 can have Z eliminated\n\nThe beauty: you don't need to know if the pivot is X or Y — the elimination works either way!",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "XY-Wing in Practice",
+          "description": "XY-Wing is one of the most satisfying techniques to find. It often appears in puzzles rated 'Hard' and 'Expert'. The key is to scan for bivalue cells (cells with exactly 2 pencil marks) and check if they form the pivot-wing pattern.\n\nTip: Use the auto-notes feature to fill pencil marks, then look for cells with only 2 candidates to find potential pivots and wings.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "unique-rectangle",
+      "title": "Unique Rectangle",
+      "level": "expert",
+      "description": "Exploit the fact that valid Sudoku puzzles have exactly one solution to eliminate impossible candidates.",
+      "order": 11,
+      "steps": [
+        {
+          "title": "The Uniqueness Principle",
+          "description": "Every valid Sudoku puzzle has exactly ONE solution. This means certain patterns can NEVER appear in a valid puzzle. If a pattern would create multiple solutions, at least one of its candidates must be wrong — and you can eliminate it.\n\nThe most common uniqueness technique is the Unique Rectangle (UR).",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "What is a Unique Rectangle?",
+          "description": "A Unique Rectangle occurs when four cells form a rectangle (same two rows, same two columns) and three of them have the same two candidates {A, B}. If the fourth cell also had only {A, B}, the puzzle would have two solutions (swap A and B in all four cells). Since that's impossible, the fourth cell must have a candidate other than A or B.\n\nYou can eliminate A and B from the fourth cell.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Types of Unique Rectangles",
+          "description": "There are several types:\n- Type 1: One cell has extra candidates — eliminate A, B from it\n- Type 2: One cell has one extra candidate C — eliminate C from cells seeing the UR\n- Type 3: Extra candidates form a pair with another cell — eliminate based on the pair\n- Type 4: A naked single in one cell eliminates one of the UR candidates\n\nURs are powerful because they use meta-reasoning (the puzzle has one solution) rather than direct logic.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "coloring",
+      "title": "Coloring Techniques",
+      "level": "expert",
+      "description": "Use color chains to track conjugate pairs and find contradictions.",
+      "order": 12,
+      "steps": [
+        {
+          "title": "What is Coloring?",
+          "description": "Coloring is a technique that tracks chains of conjugate pairs — pairs of cells that are the only two candidates for a number in a unit. If you color alternating cells (say, green and blue), and find that two cells of the same color share a unit, you have a contradiction — all cells of that color are wrong.\n\nSimple Coloring: Two cells of the same color in one unit → that color is false.\nMulti-Coloring: Track two separate chains and look for interactions between them.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "How to Color",
+          "description": "1. Pick a number with few candidates\n2. Find conjugate pairs (cells that are the only two options for that number in a row/column/box)\n3. Color alternating cells: if cell A is green, its conjugate partner B is blue, B's partner C is green, etc.\n4. Look for:\n   - Two same-colored cells in one unit → that color is eliminated\n   - A cell that sees both colors → that number can be eliminated from that cell\n5. This often reveals the correct value of the colored cells",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "als",
+      "title": "Almost Locked Sets (ALS)",
+      "level": "expert",
+      "description": "ALS techniques use sets of cells that are one candidate short of being locked to find eliminations.",
+      "order": 13,
+      "steps": [
+        {
+          "title": "What is an ALS?",
+          "description": "An Almost Locked Set (ALS) is a set of N cells that collectively have N+1 candidates. For example, 2 cells with 3 candidates total, or 3 cells with 4 candidates. If you removed one candidate, the set would be 'locked' (each cell forced to a specific value).\n\nALS techniques look for interactions between two ALSs to find eliminations.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "ALS-XZ Rule",
+          "description": "The simplest ALS technique: if you have two ALSs, and candidate X appears in both, while candidate Z appears in both, then:\n- If X is true in one ALS, Z must be false in the other (and vice versa)\n- Any cell that sees all instances of Z in both ALSs can have Z eliminated\n\nThis is a powerful elimination technique that generalizes many simpler patterns.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Why ALS is Expert-Level",
+          "description": "ALS techniques are hard to spot because they require identifying candidate sets that are 'almost locked.' Unlike simpler techniques that look at visible patterns, ALS requires counting candidates across groups of cells.\n\nHowever, ALS can solve puzzles that no other technique can crack. Expert solvers use ALS chains and ALS-XZ to tackle the hardest puzzles in the world (like those rated 11.0+ on SudokuWiki).",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
     }
   ]
 }

@@ -98,3 +98,31 @@ Starting Batch 1 now.
 - Frontend: this commit (HTML overlay, CSS styling, JS tutorial engine)
 
 **Next: Batch 2** — Add intermediate lessons (Naked Pairs, Hidden Pairs) with more complex interactive practice puzzles, and add E2E tests for the tutorial UI.
+
+### 2026-07-22 06:51 UTC — Batch 2 Complete: E2E Tests + Intermediate Lessons
+
+**What was built:**
+- 7 E2E tests covering: Learn button visibility, overlay open/close, sidebar lesson list, step content rendering, navigation buttons, practice board display
+- 3 intermediate lessons: Naked Pairs, Hidden Pairs, Pointing Pairs
+- Fixed E2E test to use rendered content selector (#tutorialContent h2) instead of hidden template element
+
+**Test results:** 18 total (11 unit + 7 E2E), all pass
+
+**Commit:** Batch 2 commit
+
+### 2026-07-22 06:51 UTC — Batch 3 Complete: Advanced & Expert Lessons
+
+**What was built:**
+- 3 advanced lessons: X-Wing, Swordfish, XY-Wing — with detailed explanations of patterns and when to look for them
+- 3 expert lessons: Unique Rectangle, Coloring, Almost Locked Sets (ALS) — with meta-reasoning and advanced chain techniques
+- Total lesson count: 13 (4 beginner + 3 intermediate + 3 advanced + 3 expert)
+
+**Content design decisions:**
+- Advanced/expert lessons are info-only (no practice puzzles yet) — these techniques require complex board states that are hard to construct
+- Future batches will add interactive practice for advanced techniques
+- Each lesson includes: what it is, how to find it, why it matters
+- Cross-references between techniques (e.g., X-Wing mentions Swordfish as extension)
+
+**Test results:** 18 total, all pass (content API returns all 13 lessons correctly)
+
+**Next: Batch 4** — In-game contextual help: when user is stuck, offer tutorial-style technique suggestions based on current board state. Also enhance the tutorial UI with better visual highlighting and technique tips integration.
