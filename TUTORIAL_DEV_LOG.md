@@ -235,3 +235,34 @@ Instead of a separate page, the reference library will be a tab/view within the 
 7. `GET /api/tutorials/stats` — tutorial statistics
 8. `GET /api/tutorials/achievements` — achievement list
 9. (Implicit: progress auto-checks achievements)
+
+### 2026-07-22 07:08 UTC — Batch 9: Lesson Recommendation System
+
+**What was built:**
+- `GET /api/tutorials/recommend` endpoint — recommends next lesson based on user progress
+- "Continue Learning" button at top of tutorial sidebar — shows recommended next lesson
+- Click on recommendation navigates directly to the lesson
+- When all lessons complete, no recommendation shown
+- 5 tests in `test_tutorial_recommend.py`
+
+**Algorithm:**
+- Find first incomplete lesson by order (1, 2, 3, ...)
+- Return lesson_id, title, level, and human-readable reason
+- If all lessons complete, return null lesson_id with congratulations message
+
+**Git commits (accurate hashes):**
+| Batch | Commit | Description |
+|-------|--------|-------------|
+| 1 | `39051ec` | Framework + 4 beginner lessons + API + progress tracking |
+| 1 | `db95684` | Frontend UI — Learn button, overlay, lesson viewer |
+| 1 | `087e3df` | Dev log and spec: Batch 1 complete |
+| 2 | `e30fa6c` | E2E tests + intermediate lessons |
+| 3 | `2ee4447` | Advanced + Expert lessons |
+| 4 | `3d5f5d9` | Technique tips, stats, in-game help |
+| 5 | `6ebaace` | Progress dashboard in sidebar |
+| 6 | `e759a33` | Reference library with tab system |
+| 7 | `b01e8a2` | Achievements system |
+| 8 | `4a77518` | Dev log with full summary |
+| 9 | (latest) | Lesson recommendation endpoint + UI |
+
+**Total tutorial test count:** 38 (11 content + 9 tips + 6 achievements + 5 recommendation + 7 E2E)
