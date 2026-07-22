@@ -121,6 +121,9 @@
             <button class="action-btn" id="loadGamesBtn">📂 Load Games</button>
             <button class="action-btn" id="helpBtn" title="Keyboard shortcuts (?)">❓ Help</button>
           </div>
+          <div class="action-row">
+            <button class="action-btn primary" id="learnBtn" title="Learn Sudoku techniques">🎓 Learn</button>
+          </div>
         </section>
 
         <p class="hint-text" id="hintText"></p>
@@ -220,6 +223,25 @@
         <span id="loginToggleText">Don't have an account? <a href="#" id="toggleAuthMode">Register</a></span>
       </div>
       <p id="loginError" style="color:var(--danger); display:none; margin-top:8px;"></p>
+    </div>
+  </div>
+
+  <!-- Tutorial overlay -->
+  <div class="overlay" id="tutorialOverlay">
+    <div class="modal tutorial-modal">
+      <div class="tutorial-sidebar" id="tutorialLessonList"></div>
+      <div class="tutorial-content" id="tutorialContent">
+        <div class="tutorial-step" id="tutorialStep">
+          <h2 id="tutorialStepTitle"></h2>
+          <div id="tutorialStepDescription"></div>
+          <div class="tutorial-practice-board" id="tutorialPracticeBoard" style="display:none;"></div>
+          <div class="tutorial-actions">
+            <button class="action-btn" id="tutorialPrevBtn">← Previous</button>
+            <button class="action-btn primary" id="tutorialNextBtn">Next →</button>
+            <button class="action-btn" id="tutorialCloseBtn">Close</button>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

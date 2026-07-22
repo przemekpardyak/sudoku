@@ -1510,4 +1510,258 @@
       });
     }).catch(() => {});
   })();
+
+  // === Tutorial System ===
+  const tutorial = {
+    lessons: [],
+    currentLesson: null,
+    currentStepIndex: 0,
+    progress: { completed_lessons: [], completed_steps: [], started_lessons: [] },
+
+    async init() {
+      const learnBtn = document.getElementById('learnBtn');
+      if (!learnBtn) return;
+      learnBtn.addEventListener('click', () => this.open());
+      document.getElementById('tutorialCloseBtn').addEventListener('click', () => this.close());
+      document.getElementById('tutorialPrevBtn').addEventListener('click', () => this.prevStep());
+      document.getElementById('tutorialNextBtn').addEventListener('click', () => this.nextStep());
+      // Load progress
+      try {
+        const res = await fetch('/api/tutorials/progress');
+        if (res.ok) this.progress = await res.json();
+      } catch (e) { /* not logged in or no progress yet */ }
+    },
+
+    async open() {
+      document.getElementById('tutorialOverlay').classList.add('show');
+      await this.loadLessons();
+    },
+
+    close() {
+      document.getElementById('tutorialOverlay').classList.remove('show');
+    },
+
+    async loadLessons() {
+      try {
+        const res = await fetch('/api/tutorials/lessons');
+        const data = await res.json();
+        this.lessons = data.lessons;
+        this.renderSidebar();
+        if (this.lessons.length > 0) {
+          await this.loadLesson(this.lessons[0].id);
+        }
+      } catch (e) {
+        console.error('Failed to load lessons:', e);
+      }
+    },
+
+    renderSidebar() {
+      const sidebar = document.getElementById('tutorialLessonList');
+      const levels = { beginner: [], intermediate: [], advanced: [], expert: [] };
+      this.lessons.forEach(l => {
+        if (levels[l.level]) levels[l.level].push(l);
+      });
+
+      let html = '<h3>📚 Lessons</h3>';
+      for (const [level, lessons] of Object.entries(levels)) {
+        if (lessons.length === 0) continue;
+        html += `<div class="tutorial-level-section">`;
+        html += `<p class="tutorial-level-title">${level.charAt(0).toUpperCase() + level.slice(1)}</p>`;
+        lessons.forEach(l => {
+          const completed = this.progress.completed_lessons.includes(l.id);
+          const active = this.currentLesson && this.currentLesson.id === l.id;
+          html += `<button class="tutorial-lesson-item ${active ? 'active' : ''} ${completed ? 'completed' : ''}" data-lesson-id="${l.id}">${l.title}</button>`;
+        });
+        html += `</div>`;
+      }
+      sidebar.innerHTML = html;
+
+      // Attach click handlers
+      sidebar.querySelectorAll('.tutorial-lesson-item').forEach(btn => {
+        btn.addEventListener('click', () => this.loadLesson(btn.dataset.lessonId));
+      });
+    },
+
+    async loadLesson(lessonId) {
+      try {
+        const res = await fetch(`/api/tutorials/lessons/${lessonId}`);
+        if (!res.ok) return;
+        this.currentLesson = await res.json();
+        this.currentStepIndex = 0;
+        this.renderSidebar();
+        this.renderStep();
+      } catch (e) {
+        console.error('Failed to load lesson:', e);
+      }
+    },
+
+    renderStep() {
+      if (!this.currentLesson) return;
+      const step = this.currentLesson.steps[this.currentStepIndex];
+      if (!step) return;
+
+      document.getElementById('tutorialStepTitle').textContent = step.title;
+      document.getElementById('tutorialStepDescription').textContent = step.description;
+
+      // Progress bar
+      const total = this.currentLesson.steps.length;
+      const pct = ((this.currentStepIndex + 1) / total) * 100;
+      let content = `<div class="tutorial-progress-bar"><div class="tutorial-progress-bar-fill" style="width:${pct}%"></div></div>`;
+      content += `<h2>${step.title}</h2><div id="tutorialStepDescription">${step.description}</div>`;
+
+      // Practice board
+      const practiceDiv = document.getElementById('tutorialPracticeBoard');
+      if (step.type === 'practice' && step.puzzle) {
+        content += this.renderPracticeBoard(step);
+      }
+
+      const contentEl = document.getElementById('tutorialContent');
+      contentEl.innerHTML = `
+        <div class="tutorial-step" id="tutorialStep">
+          ${content}
+          <div class="tutorial-actions">
+            <button class="action-btn" id="tutorialPrevBtn" ${this.currentStepIndex === 0 ? 'disabled' : ''}>← Previous</button>
+            <button class="action-btn primary" id="tutorialNextBtn">${this.currentStepIndex === this.currentLesson.steps.length - 1 ? '✓ Complete' : 'Next →'}</button>
+            <button class="action-btn" id="tutorialCloseBtn">Close</button>
+          </div>
+        </div>
+      `;
+
+      // Re-attach event listeners
+      document.getElementById('tutorialPrevBtn').addEventListener('click', () => this.prevStep());
+      document.getElementById('tutorialNextBtn').addEventListener('click', () => this.nextStep());
+      document.getElementById('tutorialCloseBtn').addEventListener('click', () => this.close());
+
+      // Attach practice board handlers
+      if (step.type === 'practice' && step.puzzle) {
+        this.attachPracticeHandlers(step);
+      }
+    },
+
+    renderPracticeBoard(step) {
+      const puzzle = step.puzzle;
+      const highlight = step.highlight_cell;
+      let html = '<div class="tutorial-practice-board"><div class="tutorial-mini-board">';
+      for (let r = 0; r < 9; r++) {
+        for (let c = 0; c < 9; c++) {
+          const val = puzzle[r][c];
+          const isGiven = val !== 0;
+          const isHighlight = highlight && highlight[0] === r && highlight[1] === c;
+          let classes = 'tutorial-mini-cell';
+          if (isGiven) classes += ' given';
+          if (isHighlight) classes += ' highlight-cell';
+          html += `<div class="${classes}" data-row="${r}" data-col="${c}">${val !== 0 ? val : ''}</div>`;
+        }
+      }
+      html += '</div>';
+      if (step.expected_value) {
+        html += `<p style="margin-top:12px; color:var(--text-mute); font-size:13px;">Click the highlighted cell and type the number you think goes there.</p>`;
+        html += `<div id="practiceFeedback" style="margin-top:8px; font-size:14px; font-weight:600;"></div>`;
+      }
+      html += '</div>';
+      return html;
+    },
+
+    attachPracticeHandlers(step) {
+      const cells = document.querySelectorAll('.tutorial-mini-cell');
+      let selectedCell = null;
+      cells.forEach(cell => {
+        cell.addEventListener('click', () => {
+          cells.forEach(c => c.classList.remove('selected'));
+          cell.classList.add('selected');
+          selectedCell = cell;
+        });
+      });
+
+      // Keyboard input for practice board
+      const keyHandler = (e) => {
+        if (!selectedCell) return;
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= 9) {
+          const row = parseInt(selectedCell.dataset.row);
+          const col = parseInt(selectedCell.dataset.col);
+          const highlight = step.highlight_cell;
+          if (highlight && highlight[0] === row && highlight[1] === col) {
+            selectedCell.textContent = num;
+            selectedCell.classList.add('user-filled');
+            const feedback = document.getElementById('practiceFeedback');
+            if (num === step.expected_value) {
+              feedback.textContent = '✅ Correct! Well done.';
+              feedback.style.color = '#4ade80';
+              this.markStepComplete(step);
+            } else {
+              feedback.textContent = `❌ Not quite. The answer is ${step.expected_value}. Try to see why!`;
+              feedback.style.color = 'var(--danger)';
+            }
+          }
+        }
+      };
+      document.getElementById('tutorialContent').addEventListener('keydown', keyHandler);
+      // Also listen on the cells directly
+      cells.forEach(cell => {
+        cell.addEventListener('keydown', keyHandler);
+        cell.setAttribute('tabindex', '0');
+      });
+    },
+
+    prevStep() {
+      if (this.currentStepIndex > 0) {
+        this.currentStepIndex--;
+        this.renderStep();
+      }
+    },
+
+    async nextStep() {
+      if (!this.currentLesson) return;
+      const step = this.currentLesson.steps[this.currentStepIndex];
+      // Mark step as complete
+      await this.markStepComplete(step);
+
+      if (this.currentStepIndex < this.currentLesson.steps.length - 1) {
+        this.currentStepIndex++;
+        this.renderStep();
+      } else {
+        // Lesson complete
+        await this.markLessonComplete();
+        this.renderSidebar();
+      }
+    },
+
+    async markStepComplete(step) {
+      const stepKey = `${this.currentLesson.id}:${this.currentStepIndex}`;
+      if (!this.progress.completed_steps.includes(stepKey)) {
+        this.progress.completed_steps.push(stepKey);
+      }
+      try {
+        await fetch('/api/tutorials/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lesson_id: this.currentLesson.id,
+            step_index: this.currentStepIndex,
+            status: 'completed'
+          })
+        });
+      } catch (e) { /* offline mode */ }
+    },
+
+    async markLessonComplete() {
+      if (!this.progress.completed_lessons.includes(this.currentLesson.id)) {
+        this.progress.completed_lessons.push(this.currentLesson.id);
+      }
+      try {
+        await fetch('/api/tutorials/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            lesson_id: this.currentLesson.id,
+            status: 'completed'
+          })
+        });
+      } catch (e) { /* offline mode */ }
+    }
+  };
+
+  // Initialize tutorial system
+  tutorial.init();
 })();
