@@ -337,3 +337,40 @@ Instead of a separate page, the reference library will be a tab/view within the 
 | Hidden Pairs — Find | practice | 4 |
 | X-Wing — Spot | practice | 5 |
 | XY-Wing — Elimination | practice | 4 |
+
+### 2026-07-22 07:32 UTC — Final Practice Puzzle Update
+
+**Added practice puzzles for:**
+- X-Wing (advanced) — spot the X-Wing pattern, expected value 5
+- XY-Wing (advanced) — elimination practice, expected value 4
+- Unique Rectangle (expert) — avoid ambiguity, expected value 5
+- Coloring (expert) — color chain contradiction, expected value 3
+
+**Final practice puzzle count: 11**
+| # | Lesson | Level | Expected |
+|---|--------|-------|----------|
+| 1 | Rules — Try It | beginner | 4 |
+| 2 | Scanning — Row | beginner | 5 |
+| 3 | Scanning — Box | beginner | 7 |
+| 4 | Naked Singles | beginner | 4 |
+| 5 | Hidden Singles | beginner | 7 |
+| 6 | Naked Pairs — Spot | intermediate | 9 |
+| 7 | Hidden Pairs — Find | intermediate | 4 |
+| 8 | X-Wing — Spot | advanced | 5 |
+| 9 | XY-Wing — Elimination | advanced | 4 |
+| 10 | Unique Rectangle | expert | 5 |
+| 11 | Coloring — Chain | expert | 3 |
+
+**Also fixed:**
+- Removed conflicting 'L' keyboard shortcut (L stays for Load Games)
+- Added Learn/Tip buttons to help overlay shortcuts table
+- 3x3 box borders on mini-board cells
+
+**Final tutorial system state:**
+- 13 lessons, 11 with interactive practice
+- 9 API endpoints
+- 38 tests (31 unit + 7 E2E)
+- 10 technique tips, 7 achievements, lesson recommendation
+- Progress dashboard with per-level breakdown
+- Reference library with tab system
+- Deployed to ppardyak-cad
