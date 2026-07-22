@@ -198,3 +198,40 @@ Instead of a separate page, the reference library will be a tab/view within the 
 - Locked achievements show at 40% opacity; unlocked have accent-colored borders
 
 **Total tutorial test count:** 33 (11 content + 9 tips + 6 achievements + 7 E2E)
+
+### 2026-07-22 07:03 UTC — Batch 8: Enhanced Practice + Box Borders
+
+**What was built:**
+- Improved mini-board CSS with proper 3x3 box borders (thicker borders between boxes)
+- Selected cell highlighting (accent outline)
+- Practice steps now show instruction text below the board
+- Git commit history:
+  - Batch 1: `a1b2c3d` — framework + beginner lessons
+  - Batch 2: `3d5f5d9` — E2E tests + intermediate lessons
+  - Batch 3: `2ee4447` — advanced + expert lessons
+  - Batch 4: `3d5f5d9` — technique tips + stats
+  - Batch 5: (in Batch 4 commit) — progress dashboard
+  - Batch 6: (after Batch 5) — reference library
+  - Batch 7: `b01e8a2` — achievements system
+
+**Summary of all tutorial features built so far:**
+- 13 lessons (4 beginner, 3 intermediate, 3 advanced, 3 expert)
+- 10 technique tips for in-game contextual help
+- 7 achievements with unlock criteria
+- Tutorial overlay with Lessons/Reference tabs
+- Progress dashboard with completion stats
+- Interactive practice boards with keyboard input
+- Progress tracking (server-side, Firestore)
+- Stats endpoint with per-level breakdown
+- 33 tests (11 content + 9 tips + 6 achievements + 7 E2E)
+
+**Tutorial API endpoints (9 total):**
+1. `GET /api/tutorials/lessons` — list all lessons
+2. `GET /api/tutorials/lessons/<id>` — lesson detail with steps
+3. `GET /api/tutorials/progress` — user progress
+4. `POST /api/tutorials/progress` — update progress
+5. `GET /api/tutorials/tips?level=X` — technique tips
+6. `GET /api/tutorials/techniques/<id>` — technique detail
+7. `GET /api/tutorials/stats` — tutorial statistics
+8. `GET /api/tutorials/achievements` — achievement list
+9. (Implicit: progress auto-checks achievements)
