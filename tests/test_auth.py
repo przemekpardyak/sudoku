@@ -13,10 +13,12 @@ from auth import (
     authenticate,
     get_user,
     ensure_default_user,
+    get_default_user,
     hash_password,
     verify_password,
     reset_user_store,
 )
+import hashlib
 from storage import InMemoryStorage
 import storage as storage_module
 
@@ -319,6 +321,208 @@ class TestGameScoping(unittest.TestCase):
         game2 = s.get_game(id2)
         self.assertEqual(game1["user_id"], "migrated-user")
         self.assertEqual(game2["user_id"], "migrated-user")
+
+
+class TestLegacyHashFormat(unittest.TestCase):
+    """Tests that verify_password accepts the old salt_hex:hash_hex colon format."""
+
+    def setUp(self):
+        reset_user_store()
+
+    def test_legacy_hash_verifies_correct_password(self):
+        """verify_password should accept the old salt_hex:hash_hex format."""
+        password = "legacypass123"
+        salt = b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 200_000)
+        legacy_hash = f"{salt.hex()}:{dk.hex()}"
+        self.assertTrue(verify_password(password, legacy_hash))
+
+    def test_legacy_hash_rejects_wrong_password(self):
+        """verify_password should reject wrong password for legacy format."""
+        password = "legacypass123"
+        salt = b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 200_000)
+        legacy_hash = f"{salt.hex()}:{dk.hex()}"
+        self.assertFalse(verify_password("wrongpassword", legacy_hash))
+
+    def test_legacy_hash_uses_colon_not_dollar(self):
+        """Legacy hash format should use a colon separator, not a dollar sign."""
+        password = "legacypass123"
+        salt = b"\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10"
+        dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 200_000)
+        legacy_hash = f"{salt.hex()}:{dk.hex()}"
+        self.assertNotIn("$", legacy_hash)
+        self.assertIn(":", legacy_hash)
+
+
+class TestGetDefaultUser(unittest.TestCase):
+    """Tests for get_default_user()."""
+
+    def setUp(self):
+        reset_user_store()
+
+    def test_get_default_user_after_ensure(self):
+        """get_default_user() returns testuser info after ensure_default_user()."""
+        ensure_default_user()
+        user = get_default_user()
+        self.assertIsNotNone(user)
+        self.assertEqual(user["username"], "testuser")
+        self.assertIn("user_id", user)
+
+    def test_get_default_user_returns_none_when_absent(self):
+        """get_default_user() returns None when no testuser exists (after reset)."""
+        user = get_default_user()
+        self.assertIsNone(user)
+
+
+class TestPasswordEdgeCases(unittest.TestCase):
+    """Tests for create_user + authenticate with edge-case passwords."""
+
+    def setUp(self):
+        reset_user_store()
+
+    def test_very_long_password(self):
+        """A 1000-character password should work end-to-end."""
+        password = "a" * 1000
+        create_user("longpwuser", password)
+        user = authenticate("longpwuser", password)
+        self.assertIsNotNone(user)
+        self.assertEqual(user["username"], "longpwuser")
+
+    def test_unicode_password(self):
+        """A password with unicode characters (密码123) should work."""
+        password = "密码123"
+        create_user("unicodeuser", password)
+        user = authenticate("unicodeuser", password)
+        self.assertIsNotNone(user)
+        self.assertEqual(user["username"], "unicodeuser")
+
+    def test_special_characters_password(self):
+        """A password with special characters (!@#$%^&*(){}[]) should work."""
+        password = "!@#$%^&*(){}[]"
+        create_user("specialuser", password)
+        user = authenticate("specialuser", password)
+        self.assertIsNotNone(user)
+        self.assertEqual(user["username"], "specialuser")
+
+    def test_unicode_password_rejects_wrong(self):
+        """Wrong unicode password should fail authentication."""
+        create_user("unicodeuser2", "密码123")
+        self.assertIsNone(authenticate("unicodeuser2", "密码456"))
+
+    def test_special_chars_rejects_wrong(self):
+        """Wrong special-char password should fail authentication."""
+        create_user("specialuser2", "!@#$%^&*(){}[]")
+        self.assertIsNone(authenticate("specialuser2", "!@#$%^&*(){}"))
+
+
+class TestIterationCount(unittest.TestCase):
+    """Tests that hash_password uses the correct iteration count."""
+
+    def test_hash_contains_200000_iterations(self):
+        """hash_password should produce a hash with '200000' in the iterations field."""
+        h = hash_password("testpassword")
+        parts = h.split("$")
+        self.assertEqual(len(parts), 4)
+        self.assertEqual(parts[0], "sha256")
+        self.assertEqual(parts[1], "200000")
+
+    def test_hash_iterations_is_numeric(self):
+        """The iterations field should be a parseable integer."""
+        h = hash_password("testpassword")
+        parts = h.split("$")
+        int(parts[1])  # Should not raise
+
+
+class TestSessionPersistence(unittest.TestCase):
+    """Tests that session persists across separate requests via Flask test client."""
+
+    def setUp(self):
+        reset_user_store()
+        storage_module._storage = InMemoryStorage()
+
+        from app import app
+        self.app = app
+        self.app.testing = True
+        self.client = self.app.test_client()
+
+    def test_session_persists_across_requests(self):
+        """After login, a separate GET /api/me should return authenticated=true."""
+        ensure_default_user()
+        self.client.post("/api/login",
+                         data=json.dumps({"username": "testuser", "password": "password"}),
+                         content_type="application/json")
+        res = self.client.get("/api/me")
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data.get("authenticated"))
+        self.assertEqual(data["username"], "testuser")
+
+
+class TestDeleteAllGamesUserScoping(unittest.TestCase):
+    """Tests that DELETE /api/games only deletes the current user's games."""
+
+    def setUp(self):
+        reset_user_store()
+        storage_module._storage = InMemoryStorage()
+
+        from app import app
+        self.app = app
+        self.app.testing = True
+        self.client = self.app.test_client()
+
+        self.sample_state = {
+            "puzzle": [[5, 0, 1] + [0] * 6] + [[0] * 9] * 8,
+            "solution": [[5, 7, 1] + [0] * 6] + [[0] * 9] * 8,
+            "board": [[5, 0, 1] + [0] * 6] + [[0] * 9] * 8,
+            "given": [[True, False, True] + [False] * 6] + [[False] * 9] * 8,
+            "notes": [[[False] * 9 for _ in range(9)] for _ in range(9)],
+            "undoStack": [],
+            "redoStack": [],
+            "mistakes": 0,
+            "elapsed": 0,
+            "difficulty": 40,
+            "completed": False,
+        }
+
+    def test_delete_all_only_removes_current_user_games(self):
+        """DELETE /api/games as user1 should not delete user2's games."""
+        create_user("user1", "pass")
+        create_user("user2", "pass")
+
+        # User1 creates a game
+        self.client.post("/api/login",
+                         data=json.dumps({"username": "user1", "password": "pass"}),
+                         content_type="application/json")
+        self.client.post("/api/games",
+                         data=json.dumps(self.sample_state),
+                         content_type="application/json")
+
+        # User2 creates a game
+        self.client.post("/api/login",
+                         data=json.dumps({"username": "user2", "password": "pass"}),
+                         content_type="application/json")
+        res2 = self.client.post("/api/games",
+                                data=json.dumps(self.sample_state),
+                                content_type="application/json")
+        user2_game_id = res2.get_json()["game_id"]
+
+        # User1 deletes all their games
+        self.client.post("/api/login",
+                         data=json.dumps({"username": "user1", "password": "pass"}),
+                         content_type="application/json")
+        del_res = self.client.delete("/api/games")
+        self.assertEqual(del_res.status_code, 200)
+        self.assertEqual(del_res.get_json()["deleted_count"], 1)
+
+        # User2's game should still exist
+        self.client.post("/api/login",
+                         data=json.dumps({"username": "user2", "password": "pass"}),
+                         content_type="application/json")
+        list_res = self.client.get("/api/games")
+        games = list_res.get_json()["games"]
+        self.assertEqual(len(games), 1)
+        self.assertEqual(games[0]["game_id"], user2_game_id)
 
 
 if __name__ == "__main__":

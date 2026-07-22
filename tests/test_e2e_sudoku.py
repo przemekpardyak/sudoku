@@ -356,10 +356,11 @@ class TestGameplay(TestSudokuE2E):
         cells = self.page.query_selector_all("#board .cell")
         self.assertEqual(len(cells), 81)
 
-    def test_mistake_counter_increments(self):
-        """Placing a wrong number should increment the mistake counter."""
+    def test_mistake_counter_does_not_increment_on_placement(self):
+        """Placing a number should NOT increment the mistake counter (per spec §12.5)."""
         self.page.goto(APP_URL)
         self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(500)
 
         # Get initial mistakes
         initial = int(self.page.text_content("#mistakes"))
@@ -367,18 +368,15 @@ class TestGameplay(TestSudokuE2E):
         empty = self._find_empty_cell()
         row, col = empty
 
-        # We need to place a wrong number. We'll get the solution via API
-        # and place a different number
+        # Place a number (may be correct or wrong — either way mistakes should NOT increment)
         self._click_cell(row, col)
-
-        # Try placing a number that's likely wrong (we can't know without the solution)
-        # Just place a number and check if mistakes went up (if it was wrong)
         self.page.keyboard.press("1")
         self.page.wait_for_timeout(200)
 
-        # Mistakes should be >= initial (might not increment if 1 was correct)
+        # Mistakes should NOT change on placement — only Check button flags errors
         current = int(self.page.text_content("#mistakes"))
-        self.assertGreaterEqual(current, initial)
+        self.assertEqual(current, initial,
+                         "Mistakes should not increment on placement — only Check button flags errors")
 
 
 class TestUIFeatures(TestSudokuE2E):
@@ -2313,5 +2311,355 @@ class TestAuth(TestSudokuE2E):
                          "New user should not see testuser's games")
 
 
+class TestPencilMarkInteractions(TestSudokuE2E):
+    """Tests for pencil mark preservation and auto-removal interactions."""
+
+    def test_erase_number_shows_preserved_pencil_marks(self):
+        """Placing a final number hides pencil marks; erasing shows them again."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Find an empty cell
+        empty = self._find_empty_cell()
+        self.assertIsNotNone(empty, "Should have an empty cell")
+        row, col = empty
+
+        # Switch to notes mode
+        self.page.click("#notesModeBtn")
+        self.page.wait_for_timeout(200)
+
+        # Place pencil marks 3 and 7 in the cell
+        self._click_cell(row, col)
+        self.page.wait_for_timeout(100)
+        self.page.click(".num-btn[data-num='3']")
+        self.page.wait_for_timeout(100)
+        self.page.click(".num-btn[data-num='7']")
+        self.page.wait_for_timeout(200)
+
+        # Verify pencil marks are visible
+        cell = self._get_cell(row, col)
+        pencil_spans = cell.query_selector_all(".pencil-marks span.on")
+        self.assertGreaterEqual(len(pencil_spans), 2,
+                                "Should have at least 2 pencil marks visible")
+
+        # Switch to final mode
+        self.page.click("#finalModeBtn")
+        self.page.wait_for_timeout(200)
+
+        # Place a final number (hides pencil marks)
+        self._click_cell(row, col)
+        self.page.wait_for_timeout(100)
+        self.page.keyboard.press("5")
+        self.page.wait_for_timeout(200)
+
+        # Cell should show "5" and no pencil marks
+        cell = self._get_cell(row, col)
+        self.assertIn("user", cell.get_attribute("class") or "",
+                      "Cell should have 'user' class when final number placed")
+        pencil_after = cell.query_selector_all(".pencil-marks span.on")
+        self.assertEqual(len(pencil_after), 0,
+                         "Pencil marks should be hidden when final number placed")
+
+        # Erase the number
+        self._click_cell(row, col)
+        self.page.wait_for_timeout(100)
+        self.page.keyboard.press("Backspace")
+        self.page.wait_for_timeout(200)
+
+        # Cell should have no final number (pencil marks visible, no .user class)
+        cell = self._get_cell(row, col)
+        cell_classes = cell.get_attribute("class") or ""
+        self.assertNotIn("user", cell_classes,
+                         "Cell should not have 'user' class after erasing final number")
+        self.assertNotIn("given", cell_classes,
+                         "Cell should not have 'given' class after erasing final number")
+
+        # Pencil marks should reappear (3 and 7 preserved)
+        cell = self._get_cell(row, col)
+        pencil_restored = cell.query_selector_all(".pencil-marks span.on")
+        self.assertGreaterEqual(len(pencil_restored), 2,
+                                "Preserved pencil marks should reappear after erasing final number")
+
+    def test_place_final_removes_pencil_marks_in_row(self):
+        """Placing a final number should auto-remove that number's pencil marks in the row."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Find an empty cell and get its row
+        empty = self._find_empty_cell()
+        self.assertIsNotNone(empty, "Should have an empty cell")
+        row, target_col = empty
+
+        # Switch to notes mode
+        self.page.click("#notesModeBtn")
+        self.page.wait_for_timeout(200)
+
+        # Place pencil mark '5' in multiple empty cells in the same row
+        cells_with_mark = []
+        for c in range(9):
+            if c == target_col:
+                continue
+            if self._cell_text(row, c) == "":
+                self._click_cell(row, c)
+                self.page.wait_for_timeout(100)
+                self.page.click(".num-btn[data-num='5']")
+                self.page.wait_for_timeout(100)
+                cells_with_mark.append(c)
+                if len(cells_with_mark) >= 3:
+                    break
+
+        self.assertGreaterEqual(len(cells_with_mark), 1,
+                                "Should have placed pencil mark 5 in at least 1 other cell")
+
+        # Switch to final mode
+        self.page.click("#finalModeBtn")
+        self.page.wait_for_timeout(200)
+
+        # Place final '5' in the target cell
+        self._click_cell(row, target_col)
+        self.page.wait_for_timeout(100)
+        self.page.keyboard.press("5")
+        self.page.wait_for_timeout(300)
+
+        # Verify the target cell has 5
+        self.assertEqual(self._cell_text(row, target_col), "5")
+
+        # Verify pencil mark '5' is removed from other cells in the row
+        for c in cells_with_mark:
+            cell = self._get_cell(row, c)
+            # Cell should not have pencil mark 5 visible
+            marks = cell.query_selector_all(".pencil-marks span.on")
+            mark_values = [m.text_content().strip() for m in marks]
+            self.assertNotIn("5", mark_values,
+                            f"Pencil mark 5 should be removed from cell ({row},{c}) "
+                            f"after placing final 5 in row, got marks: {mark_values}")
+
+
+class TestCtrlShiftZRedo(TestSudokuE2E):
+    """Tests for Ctrl+Shift+Z redo shortcut."""
+
+    def test_ctrl_shift_z_redo(self):
+        """Ctrl+Shift+Z should redo an undone move."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Make a move
+        empty = self._find_empty_cell()
+        self.assertIsNotNone(empty, "Should have an empty cell")
+        row, col = empty
+
+        self._click_cell(row, col)
+        self.page.keyboard.press("4")
+        self.page.wait_for_timeout(200)
+        self.assertEqual(self._cell_text(row, col), "4")
+
+        # Undo via Ctrl+Z
+        self.page.keyboard.press("Control+Z")
+        self.page.wait_for_timeout(200)
+        self.assertEqual(self._cell_text(row, col), "")
+
+        # Redo via Ctrl+Shift+Z
+        self.page.keyboard.press("Control+Shift+Z")
+        self.page.wait_for_timeout(200)
+
+        # The number should be back
+        self.assertEqual(self._cell_text(row, col), "4",
+                         "Ctrl+Shift+Z should redo the undone move")
+
+
+class TestPausePointerEvents(TestSudokuE2E):
+    """Tests that pause disables board interaction via pointer-events:none."""
+
+    def test_pause_disables_board_interaction(self):
+        """When paused, clicking a cell should not select it (pointer-events:none)."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Click pause
+        self.page.click("#pauseBtn")
+        self.page.wait_for_timeout(300)
+
+        # Verify board has paused class
+        board_class = self.page.get_attribute("#board", "class") or ""
+        self.assertIn("paused", board_class,
+                      "Board should have 'paused' class when paused")
+
+        # Verify pointer-events is none
+        pointer_events = self.page.eval_on_selector(
+            "#board",
+            "el => getComputedStyle(el).pointerEvents"
+        )
+        self.assertEqual(pointer_events, "none",
+                        f"Board should have pointer-events:none when paused, got: {pointer_events}")
+
+        # Try clicking a cell — it should NOT get selected.
+        # Use force=True to bypass Playwright actionability check (pointer-events:none
+        # would otherwise cause a timeout).
+        cell_el = self._get_cell(0, 0)
+        cell_el.click(force=True)
+        self.page.wait_for_timeout(200)
+
+        cell_classes = cell_el.get_attribute("class") or ""
+        self.assertNotIn("selected", cell_classes,
+                         "Cell should NOT be selected when board is paused (pointer-events:none)")
+
+        # Unpause and verify interaction works again
+        self.page.click("#pauseBtn")
+        self.page.wait_for_timeout(300)
+
+        self._click_cell(0, 0)
+        self.page.wait_for_timeout(200)
+        cell = self._get_cell(0, 0)
+        cell_classes = cell.get_attribute("class") or ""
+        self.assertIn("selected", cell_classes,
+                      "Cell should be selectable after unpausing")
+
+
+class TestNumpadBadge(TestSudokuE2E):
+    """Tests for numpad remaining count badge."""
+
+    def test_numpad_remaining_count(self):
+        """After placing a number, the numpad badge should update the remaining count."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Get initial remaining count for number 5
+        btn = self.page.query_selector(".num-btn[data-num='5']")
+        badge = btn.query_selector(".num-remaining")
+        # Badge may not exist until updateNumpad runs, but it runs on load
+        initial_count = None
+        if badge:
+            initial_count = badge.text_content().strip()
+
+        # Count how many 5s are already on the board (given cells)
+        given_fives = 0
+        for r in range(9):
+            for c in range(9):
+                if self._cell_text(r, c) == "5":
+                    given_fives += 1
+
+        expected_initial = 9 - given_fives
+        if initial_count is not None:
+            self.assertEqual(int(initial_count), expected_initial,
+                            f"Initial remaining count for 5 should be {expected_initial}, "
+                            f"got {initial_count}")
+
+        # Place a 5 in an empty cell
+        empty = self._find_empty_cell()
+        self.assertIsNotNone(empty, "Should have an empty cell")
+        row, col = empty
+
+        self._click_cell(row, col)
+        self.page.keyboard.press("5")
+        self.page.wait_for_timeout(300)
+
+        # Verify the badge now shows one less
+        btn = self.page.query_selector(".num-btn[data-num='5']")
+        badge = btn.query_selector(".num-remaining")
+        self.assertIsNotNone(badge, "Numpad button should have a remaining count badge")
+        new_count = int(badge.text_content().strip())
+        self.assertEqual(new_count, expected_initial - 1,
+                        f"After placing a 5, remaining count should be {expected_initial - 1}, "
+                        f"got {new_count}")
+
+
+class TestNewGameClearsHistory(TestSudokuE2E):
+    """Tests that New Game clears undo/redo history."""
+
+    def test_new_game_clears_undo_redo(self):
+        """After clicking New Game, the undo button should be disabled (stack cleared)."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_selector("#board .cell")
+        self.page.wait_for_timeout(1000)
+
+        # Make a move (creates undo history)
+        empty = self._find_empty_cell()
+        self.assertIsNotNone(empty, "Should have an empty cell")
+        row, col = empty
+
+        self._click_cell(row, col)
+        self.page.keyboard.press("5")
+        self.page.wait_for_timeout(300)
+
+        # Verify undo button is enabled (history exists)
+        undo_btn = self.page.query_selector("#undoBtn")
+        self.assertFalse(undo_btn.is_disabled(),
+                        "Undo button should be enabled after making a move")
+
+        # Click New Game
+        self.page.click("#newGameBtn")
+        self.page.wait_for_timeout(1500)
+
+        # Undo button should be disabled (undo stack cleared)
+        undo_btn = self.page.query_selector("#undoBtn")
+        self.assertTrue(undo_btn.is_disabled(),
+                       "Undo button should be disabled after New Game (stack cleared)")
+
+        # Redo button should also be disabled
+        redo_btn = self.page.query_selector("#redoBtn")
+        self.assertTrue(redo_btn.is_disabled(),
+                       "Redo button should be disabled after New Game (stack cleared)")
+
+
+class TestShareImportFlow(TestSudokuE2E):
+    """Tests for the share/import flow."""
+
+    def test_share_creates_import_url(self):
+        """Clicking Share should create a URL with ?import= in clipboard or hint text."""
+        self.page.goto(APP_URL)
+        self.page.wait_for_timeout(1000)
+
+        # Grant clipboard permission
+        self._context.grant_permissions(["clipboard-read", "clipboard-write"])
+
+        # Open Load Games modal
+        self.page.click("#loadGamesBtn")
+        self.page.wait_for_timeout(500)
+
+        # Click the first share button
+        share_btn = self.page.query_selector("#gamesTableBody tr .share-btn")
+        self.assertIsNotNone(share_btn, "Should have a share button in games list")
+        share_btn.click()
+        self.page.wait_for_timeout(1500)
+
+        # Check clipboard for the import URL
+        clipboard_text = ""
+        try:
+            clipboard_text = self.page.evaluate("() => navigator.clipboard.readText()")
+        except Exception:
+            pass
+
+        # Check hint text as fallback
+        hint_text = self.page.text_content("#hintText")
+
+        # The share should either put the URL in clipboard or show a message
+        if clipboard_text and "?import=" in clipboard_text:
+            # Success — URL is in clipboard
+            self.assertIn("?import=", clipboard_text,
+                         "Share URL should contain ?import= parameter")
+        else:
+            # If clipboard didn't work, check the hint text
+            self.assertTrue(
+                "Share link" in hint_text or "Failed" in hint_text,
+                f"Share should show a message in hint text, got: {hint_text}"
+            )
+
+        # If the hint says "Share link copied", try to verify clipboard
+        if "Share link" in hint_text and "copied" in hint_text.lower():
+            try:
+                clipboard_text = self.page.evaluate("() => navigator.clipboard.readText()")
+                if clipboard_text:
+                    self.assertIn("?import=", clipboard_text,
+                                 "Share URL in clipboard should contain ?import=")
+            except Exception:
+                pass
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
+

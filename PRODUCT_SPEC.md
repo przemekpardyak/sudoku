@@ -264,7 +264,7 @@ const DIFF_NAMES = { 30: 'Easy', 40: 'Medium', 50: 'Hard', 58: 'Expert' };
 - `formatTime(s)` — `MM:SS` format
 - `startTimer()` — resets to 0, starts `setInterval` (1 second)
 - `resumeTimer()` — continues from `elapsed`
-- Auto-saves every 30 seconds (`elapsed % 30 === 0`)
+- Timer also triggers auto-save every 30 seconds (`elapsed % 30 === 0`) even without other state changes
 - `stopTimer()` / `resetTimer()` helpers
 
 ### 4.10 Numpad
@@ -477,7 +477,7 @@ See [§2.4](#24-auth-api-endpoints).
 
 ### 6.10 Difficulty Recommendation Logic
 
-- No completed games → suggest 30 (medium)
+- No completed games → suggest 30 (easy)
 - Best time <60s on most-used difficulty → suggest harder (most_used + 10, max 58)
 - Average time >300s → suggest easier (most_used - 10, min 20)
 - Otherwise → suggest current most-used difficulty
@@ -926,7 +926,7 @@ At Expert (58 cells removed), may not be possible to remove all cells while main
 
 ### 13.3 Auto-Save
 
-`scheduleAutoSave()` saves immediately on every state change (not debounced despite README saying 2s). `beforeunload` uses `navigator.sendBeacon()` for reliable save on page close.
+`scheduleAutoSave()` saves immediately on every state change (not debounced). Additionally, the timer interval triggers `scheduleAutoSave()` every 30 seconds (`elapsed % 30 === 0`) to persist elapsed time even without other changes. `beforeunload` uses `navigator.sendBeacon()` for reliable save on page close.
 
 ### 13.4 Player Level
 

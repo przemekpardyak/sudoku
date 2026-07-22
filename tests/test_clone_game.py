@@ -117,6 +117,17 @@ class TestCloneGame(unittest.TestCase):
         cloned = res.get_json()
         self.assertIn('cloned', cloned.get('tags', []))
 
+    def test_clone_has_source_game_id(self):
+        """Cloned game state should contain sourceGameId field."""
+        game_id, _, _ = self._create_game_with_state()
+        res = self.client.post(f'/api/games/{game_id}/clone')
+        clone_id = res.get_json()['game_id']
+
+        res = self.client.get(f'/api/games/{clone_id}')
+        cloned = res.get_json()
+        self.assertEqual(cloned.get('sourceGameId'), game_id,
+                         "Cloned game should have sourceGameId pointing to original game")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

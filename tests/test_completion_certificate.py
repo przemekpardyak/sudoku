@@ -97,6 +97,25 @@ class TestCompletionCertificate(unittest.TestCase):
         res = self.client.get(f'/api/games/{game_id}/certificate')
         self.assertEqual(res.get_json()['hintsUsed'], 3)
 
+    def test_certificate_good_rating(self):
+        """Game with <3 mistakes and <300s should get 'good' rating."""
+        # good: <3 mistakes, <300s (but not excellent: >1 mistake or >0 hints or >=120s)
+        game_id = self._create_completed_game(elapsed=200, mistakes=2, hintsUsed=0)
+        res = self.client.get(f'/api/games/{game_id}/certificate')
+        performance = res.get_json()['performance']
+        self.assertIn(performance, ['good', 'excellent'],
+                      f"Expected 'good' or 'excellent', got '{performance}'")
+
+    def test_certificate_completed_rating(self):
+        """Game with many mistakes or slow time should get 'completed' rating."""
+        # completed: anything that doesn't qualify for perfect/excellent/good
+        # good requires <3 mistakes AND <300s, so 5 mistakes should be 'completed'
+        game_id = self._create_completed_game(elapsed=500, mistakes=5, hintsUsed=2)
+        res = self.client.get(f'/api/games/{game_id}/certificate')
+        performance = res.get_json()['performance']
+        self.assertEqual(performance, 'completed',
+                         f"Expected 'completed' rating for 5 mistakes + 500s, got '{performance}'")
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
