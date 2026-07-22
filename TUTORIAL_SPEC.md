@@ -74,6 +74,24 @@ Each lesson follows this pattern:
 | 5 | Progress dashboard in sidebar | ✅ Done |
 | 6 | Reference library with tabs | ✅ Done |
 | 7 | Achievements system | ✅ Done |
-| 8 | Practice puzzles for advanced techniques | 🚧 Next |
-| 9 | Tutorial-to-game integration | ⏳ Pending |
-| 10 | Streak tracking + daily challenges | ⏳ Pending |
+| 8 | Dev log + status summary | ✅ Done |
+| 9 | Lesson recommendation + Continue Learning | ✅ Done |
+| 10 | Practice puzzles for advanced techniques | ⏳ Future |
+| 11 | Tutorial-to-game integration | ⏳ Future |
+| 12 | Spaced repetition + review | ⏳ Future |
+
+---
+
+## 5. API Reference
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/api/tutorials/lessons` | GET | No | List all lessons (summaries) |
+| `/api/tutorials/lessons/<id>` | GET | No | Get lesson detail with steps |
+| `/api/tutorials/progress` | GET | Yes | Get user's tutorial progress |
+| `/api/tutorials/progress` | POST | Yes | Update progress (lesson/step completion) |
+| `/api/tutorials/tips?level=X` | GET | No | Get technique tips (optionally filtered by level) |
+| `/api/tutorials/techniques/<id>` | GET | No | Get technique detail with how-to-find |
+| `/api/tutorials/stats` | GET | Yes | Get tutorial statistics (completion rate, per-level) |
+| `/api/tutorials/achievements` | GET | Yes | Get achievements with unlocked status |
+| `/api/tutorials/recommend` | GET | Yes | Get recommended next lesson |
