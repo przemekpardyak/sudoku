@@ -74,3 +74,27 @@ Researched best practices for game tutorials and sudoku teaching methodologies. 
 - **Batch 8+**: Expert techniques, optimization, analytics
 
 Starting Batch 1 now.
+
+### 2026-07-22 06:43 UTC — Batch 1 Complete: Tutorial Framework + 4 Beginner Lessons
+
+**What was built:**
+- **Backend:** `tutorial.py` module with content loading, `tutorials/content.json` with 4 beginner lessons
+- **API:** 4 new endpoints in `app.py` — `GET /api/tutorials/lessons`, `GET /api/tutorials/lessons/<id>`, `GET /api/tutorials/progress`, `POST /api/tutorials/progress`
+- **Storage:** `get_tutorial_progress()` and `save_tutorial_progress()` methods added to both `InMemoryStorage` and `FirestoreStorage`
+- **Frontend:** Learn button, tutorial overlay with sidebar (lessons grouped by level), step navigation, interactive mini practice board with keyboard input, progress tracking
+- **CSS:** Full tutorial styling — modal, sidebar, mini board, progress bar, feedback indicators
+- **Tests:** 11 tests in `test_tutorial.py` covering content API, lesson detail, progress tracking, auth requirement
+- **Dockerfile:** Updated to include `tutorial.py` and `tutorials/` directory
+
+**Design decisions:**
+- Tutorial content stored as static JSON file (not in Firestore) — content is code, not user data
+- Progress stored in Firestore `tutorial_progress` collection, keyed by user_id
+- Mini practice board rendered inside the tutorial modal (separate from main game board)
+- Interactive practice: click highlighted cell, type number, get immediate feedback
+- Lessons grouped by skill level (beginner/intermediate/advanced/expert) in sidebar
+
+**Commits:**
+- Backend: previous commit (tutorial.py, content.json, app.py endpoints, storage.py, tests, Dockerfile)
+- Frontend: this commit (HTML overlay, CSS styling, JS tutorial engine)
+
+**Next: Batch 2** — Add intermediate lessons (Naked Pairs, Hidden Pairs) with more complex interactive practice puzzles, and add E2E tests for the tutorial UI.

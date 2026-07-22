@@ -67,10 +67,10 @@ Each lesson follows this pattern:
 
 | Batch | Feature | Status |
 |-------|---------|--------|
-| 1 | Tutorial framework + Rules lesson | 🚧 In Progress |
-| 2 | Scanning & Naked Singles | ⏳ Pending |
-| 3 | Hidden Singles + Progress API | ⏳ Pending |
-| 4 | Tutorial UI + In-game help | ⏳ Pending |
+| 1 | Tutorial framework + Rules lesson | ✅ Done |
+| 2 | Scanning & Naked Singles | ✅ Done (in Batch 1) |
+| 3 | Hidden Singles + Progress API | ✅ Done (in Batch 1) |
+| 4 | Tutorial UI + In-game help | 🚧 Next |
 | 5 | Intermediate techniques | ⏳ Pending |
 | 6 | Reference library | ⏳ Pending |
 | 7 | Advanced techniques + Achievements | ⏳ Pending |
