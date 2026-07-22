@@ -1,0 +1,227 @@
+{
+  "lessons": [
+    {
+      "id": "rules-of-sudoku",
+      "title": "Rules of Sudoku",
+      "level": "beginner",
+      "description": "Learn the basic rules of Sudoku — what the grid is, what the goal is, and what's allowed.",
+      "order": 1,
+      "steps": [
+        {
+          "title": "The Grid",
+          "description": "Sudoku is played on a 9×9 grid, divided into nine 3×3 boxes. Your goal is to fill every empty cell with a number from 1 to 9.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "The Three Rules",
+          "description": "There are three rules:\n1. Each row must contain 1-9 with no repeats\n2. Each column must contain 1-9 with no repeats\n3. Each 3×3 box must contain 1-9 with no repeats\nThat's it! The puzzle starts with some numbers already filled in (called 'givens'). You fill in the rest.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "No Repeating Numbers",
+          "description": "If you place a 5 in a row, you cannot place another 5 in that same row. Same for columns and boxes. This is the core constraint that makes Sudoku a logic puzzle.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Try It: Place a Number",
+          "description": "Look at the highlighted cell. What number can go there? Look at the row, column, and box to figure out what's missing. Click the cell and enter the number.",
+          "type": "practice",
+          "puzzle": [
+            [5, 3, 0, 0, 7, 0, 0, 0, 0],
+            [6, 0, 0, 1, 9, 5, 0, 0, 0],
+            [0, 9, 8, 0, 0, 0, 0, 6, 0],
+            [8, 0, 0, 0, 6, 0, 0, 0, 3],
+            [4, 0, 0, 8, 0, 3, 0, 0, 1],
+            [7, 0, 0, 0, 2, 0, 0, 0, 6],
+            [0, 6, 0, 0, 0, 0, 2, 8, 0],
+            [0, 0, 0, 4, 1, 9, 0, 0, 5],
+            [0, 0, 0, 0, 8, 0, 0, 7, 9]
+          ],
+          "highlight_cell": [0, 2],
+          "expected_value": 4,
+          "solution": [
+            [5, 3, 4, 6, 7, 8, 9, 1, 2],
+            [6, 7, 2, 1, 9, 5, 3, 4, 8],
+            [1, 9, 8, 3, 4, 2, 5, 6, 7],
+            [8, 5, 9, 7, 6, 1, 4, 2, 3],
+            [4, 2, 6, 8, 5, 3, 7, 9, 1],
+            [7, 1, 3, 9, 2, 4, 8, 5, 6],
+            [9, 6, 1, 5, 3, 7, 2, 8, 4],
+            [2, 8, 7, 4, 1, 9, 6, 3, 5],
+            [3, 4, 5, 2, 8, 6, 1, 7, 9]
+          ]
+        },
+        {
+          "title": "Givens vs User Numbers",
+          "description": "Numbers that come pre-filled are called 'givens' — they cannot be changed. Numbers you enter are your guesses. In this app, givens are bold and your numbers are shown in a different color.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "scanning",
+      "title": "Scanning Technique",
+      "level": "beginner",
+      "description": "Learn the most fundamental solving technique — scanning rows and columns to find where numbers can go.",
+      "order": 2,
+      "steps": [
+        {
+          "title": "What is Scanning?",
+          "description": "Scanning is the process of looking at a row, column, or box and checking which numbers are already present. If 8 of 9 numbers are present, the missing one is obvious. Scanning is how you'll find most of your early solves.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Scanning a Row",
+          "description": "Look at the highlighted row. It has: 1, 2, 3, 4, 6, 7, 8, 9. What's missing? Place it in the empty cell.",
+          "type": "practice",
+          "puzzle": [
+            [1, 2, 3, 0, 6, 7, 8, 9, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ],
+          "highlight_cell": [0, 3],
+          "expected_value": 5,
+          "solution": [
+            [1, 2, 3, 5, 6, 7, 8, 9, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        },
+        {
+          "title": "Scanning a Box",
+          "description": "Now look at the highlighted 3×3 box. Check which numbers are already in it, and which number from 1-9 is missing. Place it in the highlighted cell.",
+          "type": "practice",
+          "puzzle": [
+            [5, 3, 4, 0, 0, 0, 0, 0, 0],
+            [6, 0, 2, 0, 0, 0, 0, 0, 0],
+            [0, 9, 8, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ],
+          "highlight_cell": [1, 1],
+          "expected_value": 7,
+          "solution": [
+            [5, 3, 4, 0, 0, 0, 0, 0, 0],
+            [6, 7, 2, 0, 0, 0, 0, 0, 0],
+            [0, 9, 8, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "naked-singles",
+      "title": "Naked Singles",
+      "level": "beginner",
+      "description": "When only one number can go in a cell, it's called a 'naked single'. Learn to spot them.",
+      "order": 3,
+      "steps": [
+        {
+          "title": "What is a Naked Single?",
+          "description": "A naked single is a cell where only one number is possible. You find it by checking the row, column, and box for that cell — if 8 different numbers are already present across all three, only one number remains.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Find the Naked Single",
+          "description": "Look at the highlighted cell. Check its row, column, and 3×3 box. What's the only number that can go there? Place it!",
+          "type": "practice",
+          "puzzle": [
+            [5, 3, 0, 0, 7, 0, 0, 0, 0],
+            [6, 0, 0, 1, 9, 5, 0, 0, 0],
+            [0, 9, 8, 0, 0, 0, 0, 6, 0],
+            [8, 0, 0, 0, 6, 0, 0, 0, 3],
+            [4, 0, 0, 8, 0, 3, 0, 0, 1],
+            [7, 0, 0, 0, 2, 0, 0, 0, 6],
+            [0, 6, 0, 0, 0, 0, 2, 8, 0],
+            [0, 0, 0, 4, 1, 9, 0, 0, 5],
+            [0, 0, 0, 0, 8, 0, 0, 7, 9]
+          ],
+          "highlight_cell": [0, 2],
+          "expected_value": 4,
+          "solution": [
+            [5, 3, 4, 6, 7, 8, 9, 1, 2],
+            [6, 7, 2, 1, 9, 5, 3, 4, 8],
+            [1, 9, 8, 3, 4, 2, 5, 6, 7],
+            [8, 5, 9, 7, 6, 1, 4, 2, 3],
+            [4, 2, 6, 8, 5, 3, 7, 9, 1],
+            [7, 1, 3, 9, 2, 4, 8, 5, 6],
+            [9, 6, 1, 5, 3, 7, 2, 8, 4],
+            [2, 8, 7, 4, 1, 9, 6, 3, 5],
+            [3, 4, 5, 2, 8, 6, 1, 7, 9]
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hidden-singles",
+      "title": "Hidden Singles",
+      "level": "beginner",
+      "description": "A hidden single is a number that can only go in one cell within a row, column, or box — even if other numbers could go in that cell too.",
+      "order": 4,
+      "steps": [
+        {
+          "title": "What is a Hidden Single?",
+          "description": "Unlike a naked single (where the cell has only one candidate), a hidden single is where a NUMBER has only one possible cell. You scan a row/column/box and ask: 'Where can the number 7 go?' If only one cell in that unit can hold 7, that's where it goes.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Find the Hidden Single",
+          "description": "Look at the top-left 3×3 box. Where can the number 7 go? Check each empty cell — does the row or column already contain a 7? Find the only cell where 7 fits.",
+          "type": "practice",
+          "puzzle": [
+            [5, 3, 0, 0, 0, 0, 0, 0, 0],
+            [6, 0, 0, 0, 7, 0, 0, 0, 0],
+            [0, 9, 8, 0, 0, 0, 0, 0, 7],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 7, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ],
+          "highlight_cell": [0, 2],
+          "expected_value": 7,
+          "solution": [
+            [5, 3, 7, 0, 0, 0, 0, 0, 0],
+            [6, 0, 0, 0, 7, 0, 0, 0, 0],
+            [0, 9, 8, 0, 0, 0, 0, 0, 7],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 7, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ]
+        }
+      ]
+    }
+  ]
+}

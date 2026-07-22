@@ -143,6 +143,16 @@ class InMemoryStorage(GameStorage):
             "favorite": game.get("favorite", False),
         }
 
+    def get_tutorial_progress(self, user_id: str) -> dict | None:
+        """Get tutorial progress for a user."""
+        return self.__dict__.get("_tutorial_progress", {}).get(user_id)
+
+    def save_tutorial_progress(self, user_id: str, progress: dict) -> None:
+        """Save tutorial progress for a user."""
+        if not hasattr(self, "_tutorial_progress"):
+            self._tutorial_progress = {}
+        self._tutorial_progress[user_id] = progress
+
 
 class FirestoreStorage(GameStorage):
     """Firestore-backed game storage for production.
@@ -262,6 +272,18 @@ class FirestoreStorage(GameStorage):
         if batch_size > 0:
             batch.commit()
         return count
+
+    def get_tutorial_progress(self, user_id: str) -> dict | None:
+        """Get tutorial progress for a user from Firestore."""
+        try:
+            doc = self._db.collection("tutorial_progress").document(user_id).get()
+            return doc.to_dict() if doc.exists else None
+        except Exception:
+            return None
+
+    def save_tutorial_progress(self, user_id: str, progress: dict) -> None:
+        """Save tutorial progress for a user to Firestore."""
+        self._db.collection("tutorial_progress").document(user_id).set(progress)
 
 
 # Factory: pick the right storage based on environment.

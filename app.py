@@ -10,6 +10,7 @@ from flask import Flask, jsonify, render_template, request, session
 from auth import authenticate, create_user, ensure_default_user, get_default_user
 from storage import get_storage
 from sudoku import generate_puzzle
+from tutorial import get_all_lessons, get_lesson, get_initial_progress
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "sudoku-dev-secret-key-change-in-prod")
@@ -1242,6 +1243,73 @@ def player_profile() -> object:
         "recommendation_reasoning": rec_reason,
         "level": level,
     })
+
+
+# --- Tutorial endpoints ---
+
+
+@app.route("/api/tutorials/lessons")
+def tutorial_lessons():
+    """List all available tutorial lessons."""
+    return jsonify({"lessons": get_all_lessons()})
+
+
+@app.route("/api/tutorials/lessons/<lesson_id>")
+def tutorial_lesson_detail(lesson_id: str):
+    """Get detailed lesson content including steps."""
+    lesson = get_lesson(lesson_id)
+    if lesson is None:
+        return jsonify({"error": "Lesson not found"}), 404
+    return jsonify(lesson)
+
+
+@app.route("/api/tutorials/progress")
+def tutorial_progress():
+    """Get the current user's tutorial progress."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    storage = get_storage()
+    progress = storage.get_tutorial_progress(user_id)
+    if progress is None:
+        progress = get_initial_progress()
+    return jsonify(progress)
+
+
+@app.route("/api/tutorials/progress", methods=["POST"])
+def update_tutorial_progress():
+    """Update tutorial progress for the current user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "Invalid request"}), 400
+
+    storage = get_storage()
+    progress = storage.get_tutorial_progress(user_id)
+    if progress is None:
+        progress = get_initial_progress()
+
+    lesson_id = data.get("lesson_id")
+    step_index = data.get("step_index")
+    status = data.get("status", "completed")
+
+    if status == "completed":
+        if step_index is not None:
+            step_key = f"{lesson_id}:{step_index}"
+            if step_key not in progress["completed_steps"]:
+                progress["completed_steps"].append(step_key)
+            if lesson_id not in progress["started_lessons"]:
+                progress["started_lessons"].append(lesson_id)
+        else:
+            if lesson_id not in progress["completed_lessons"]:
+                progress["completed_lessons"].append(lesson_id)
+
+    storage.save_tutorial_progress(user_id, progress)
+    return jsonify(progress)
 
 
 if __name__ == "__main__":
