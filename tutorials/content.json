@@ -252,7 +252,7 @@
             [5, 0, 0, 0, 0, 0, 0, 0, 4]
           ],
           "highlight_cell": [0, 0],
-          "expected_value": 0,
+          "expected_value": 9,
           "solution": null
         },
         {
