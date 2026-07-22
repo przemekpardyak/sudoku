@@ -278,8 +278,8 @@
         },
         {
           "title": "Find the Hidden Pair",
-          "description": "Look at the top row. Where can the number 4 go? Where can the number 9 go? If they can only go in the same two cells, those cells form a hidden pair. You can then eliminate all other candidates from those cells.",
-          "type": "info",
+          "description": "Look at the top row. Where can the number 4 go? Where can the number 9 go? If they can only go in the same two cells, those cells form a hidden pair. You can then eliminate all other candidates from those cells. Click the highlighted cell and enter the number 4.",
+          "type": "practice",
           "puzzle": [
             [0, 0, 1, 0, 2, 3, 0, 0, 5],
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -292,7 +292,7 @@
             [0, 0, 0, 0, 0, 0, 0, 0, 0]
           ],
           "highlight_cell": [0, 0],
-          "expected_value": 0,
+          "expected_value": 4,
           "solution": null
         },
         {
