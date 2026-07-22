@@ -222,6 +222,113 @@
           ]
         }
       ]
+    },
+    {
+      "id": "naked-pairs",
+      "title": "Naked Pairs",
+      "level": "intermediate",
+      "description": "When two cells in a row, column, or box can only be the same two numbers, those numbers are locked — they can't appear elsewhere in that unit.",
+      "order": 5,
+      "steps": [
+        {
+          "title": "What is a Naked Pair?",
+          "description": "A naked pair occurs when two cells in the same row, column, or box have exactly the same two candidates — and no others. For example, if two cells can only be {2, 7}, then 2 and 7 are locked to those cells. You can remove 2 and 7 from all other cells in that row/column/box.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Spot the Naked Pair",
+          "description": "Look at the highlighted row. Two cells have pencil marks showing only {3, 5}. Since these two cells must contain 3 and 5 (in some order), no other cell in that row can be 3 or 5. This narrows down the candidates for the remaining cells!",
+          "type": "info",
+          "puzzle": [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 0, 2],
+            [4, 0, 0, 0, 0, 0, 0, 0, 6],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [8, 0, 0, 0, 0, 0, 0, 0, 9],
+            [7, 0, 0, 0, 0, 0, 0, 0, 3],
+            [5, 0, 0, 0, 0, 0, 0, 0, 4]
+          ],
+          "highlight_cell": [0, 0],
+          "expected_value": 0,
+          "solution": null
+        },
+        {
+          "title": "Using Naked Pairs to Eliminate",
+          "description": "Once you identify a naked pair, you can eliminate those candidates from other cells. This often reveals naked singles or other patterns. The key insight: the pair 'reserves' those two numbers for those two cells — no one else in that unit can use them.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "hidden-pairs",
+      "title": "Hidden Pairs",
+      "level": "intermediate",
+      "description": "When two numbers can only go in the same two cells within a unit, those cells are locked to those numbers — even if other candidates exist.",
+      "order": 6,
+      "steps": [
+        {
+          "title": "What is a Hidden Pair?",
+          "description": "A hidden pair is the complement of a naked pair. Instead of looking at what candidates a cell HAS, you look at where a NUMBER can go. If two numbers (say, 3 and 7) can each only go in the same two cells in a row, then those two cells must contain 3 and 7. All other candidates in those cells can be eliminated.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Find the Hidden Pair",
+          "description": "Look at the top row. Where can the number 4 go? Where can the number 9 go? If they can only go in the same two cells, those cells form a hidden pair. You can then eliminate all other candidates from those cells.",
+          "type": "info",
+          "puzzle": [
+            [0, 0, 1, 0, 2, 3, 0, 0, 5],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ],
+          "highlight_cell": [0, 0],
+          "expected_value": 0,
+          "solution": null
+        },
+        {
+          "title": "Why Hidden Pairs Matter",
+          "description": "Hidden pairs are powerful because they let you eliminate candidates you might not have known were wrong. By removing extra candidates, you often reveal naked singles or simpler patterns. The key is to look at WHERE numbers can go, not just WHAT a cell can contain.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
+    },
+    {
+      "id": "pointing-pairs",
+      "title": "Pointing Pairs",
+      "level": "intermediate",
+      "description": "When a number's candidates in a box are all in the same row or column, that number can be eliminated from the rest of that row/column.",
+      "order": 7,
+      "steps": [
+        {
+          "title": "What is a Pointing Pair?",
+          "description": "Sometimes a number can only go in cells that are all in the same row or column within a 3×3 box. When this happens, that number MUST be in that row/column within the box — so it can't be anywhere else in that row/column outside the box. You can eliminate those candidates.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Spot the Pointing Pair",
+          "description": "Look at the top-left 3×3 box. If the number 5 can only go in cells in the first row of the box (cells (0,0), (0,1), or (0,2)), then 5 must be in row 0 within this box. You can eliminate 5 from all other cells in row 0.",
+          "type": "info",
+          "puzzle": null
+        },
+        {
+          "title": "Pointing Pairs Eliminate Candidates",
+          "description": "After eliminating the pointed-away candidates, you often reveal new singles or pairs. Pointing pairs are one of the most commonly used intermediate techniques because they appear frequently in real puzzles.",
+          "type": "info",
+          "puzzle": null
+        }
+      ]
     }
   ]
 }
