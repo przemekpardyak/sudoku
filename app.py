@@ -10,7 +10,7 @@ from flask import Flask, jsonify, render_template, request, session
 from auth import authenticate, create_user, ensure_default_user, get_default_user
 from storage import get_storage
 from sudoku import generate_puzzle
-from tutorial import get_all_lessons, get_lesson, get_initial_progress
+from tutorial import get_all_lessons, get_lesson, get_initial_progress, get_technique_tips, get_technique, get_tutorial_stats
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "sudoku-dev-secret-key-change-in-prod")
@@ -1310,6 +1310,37 @@ def update_tutorial_progress():
 
     storage.save_tutorial_progress(user_id, progress)
     return jsonify(progress)
+
+
+@app.route("/api/tutorials/tips")
+def tutorial_tips():
+    """Get technique tips, optionally filtered by level."""
+    level = request.args.get("level")
+    return jsonify({"tips": get_technique_tips(level)})
+
+
+@app.route("/api/tutorials/techniques/<technique_id>")
+def tutorial_technique_detail(technique_id: str):
+    """Get detailed information about a specific technique."""
+    technique = get_technique(technique_id)
+    if technique is None:
+        return jsonify({"error": "Technique not found"}), 404
+    return jsonify(technique)
+
+
+@app.route("/api/tutorials/stats")
+def tutorial_stats():
+    """Get tutorial statistics for the current user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    storage = get_storage()
+    progress = storage.get_tutorial_progress(user_id)
+    if progress is None:
+        progress = get_initial_progress()
+    stats = get_tutorial_stats(progress)
+    return jsonify(stats)
 
 
 if __name__ == "__main__":

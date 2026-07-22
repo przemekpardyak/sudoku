@@ -1764,4 +1764,61 @@
 
   // Initialize tutorial system
   tutorial.init();
+
+  // === Technique Tip System ===
+  const tipSystem = {
+    tips: [],
+    currentIndex: 0,
+
+    async init() {
+      const tipBtn = document.getElementById('tipBtn');
+      if (!tipBtn) return;
+      tipBtn.addEventListener('click', () => this.showRandom());
+      document.getElementById('tipCloseBtn').addEventListener('click', () => this.close());
+      document.getElementById('tipNextBtn').addEventListener('click', () => this.showRandom());
+      document.getElementById('tipLearnBtn').addEventListener('click', () => this.goToLesson());
+    },
+
+    async loadTips() {
+      if (this.tips.length === 0) {
+        try {
+          const res = await fetch('/api/tutorials/tips');
+          const data = await res.json();
+          this.tips = data.tips;
+        } catch (e) {
+          console.error('Failed to load tips:', e);
+        }
+      }
+    },
+
+    async showRandom() {
+      await this.loadTips();
+      if (this.tips.length === 0) return;
+      let newIndex;
+      do {
+        newIndex = Math.floor(Math.random() * this.tips.length);
+      } while (newIndex === this.currentIndex && this.tips.length > 1);
+      this.currentIndex = newIndex;
+      const tip = this.tips[this.currentIndex];
+      document.getElementById('tipTitle').textContent = '\u{1F4A1} ' + tip.title;
+      document.getElementById('tipDescription').textContent = tip.description;
+      document.getElementById('tipHowToFind').textContent = 'How to find: ' + tip.how_to_find;
+      document.getElementById('tipOverlay').classList.add('show');
+    },
+
+    close() {
+      document.getElementById('tipOverlay').classList.remove('show');
+    },
+
+    goToLesson() {
+      const tip = this.tips[this.currentIndex];
+      if (tip && tip.lesson_id) {
+        this.close();
+        document.getElementById('tutorialOverlay').classList.add('show');
+        tutorial.loadLesson(tip.lesson_id);
+      }
+    }
+  };
+
+  tipSystem.init();
 })();

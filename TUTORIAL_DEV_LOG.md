@@ -126,3 +126,25 @@ Starting Batch 1 now.
 **Test results:** 18 total, all pass (content API returns all 13 lessons correctly)
 
 **Next: Batch 4** — In-game contextual help: when user is stuck, offer tutorial-style technique suggestions based on current board state. Also enhance the tutorial UI with better visual highlighting and technique tips integration.
+
+### 2026-07-22 06:55 UTC — Batch 4 Complete: Technique Tips + Stats + In-Game Help
+
+**What was built:**
+- **3 new API endpoints:**
+  - `GET /api/tutorials/tips?level=X` — returns technique tips, filterable by skill level
+  - `GET /api/tutorials/techniques/<id>` — detailed technique info with how_to_find guidance
+  - `GET /api/tutorials/stats` — user's tutorial progress stats (completion rate, per-level breakdown)
+- **10 technique tips** covering all levels (3 beginner, 3 intermediate, 2 advanced, 2 expert)
+- **In-game Tip button (💡)** — shows a random technique tip in a modal
+- **Tip modal** with: technique title, description, "how to find" guidance, "Another Tip" button, "Learn This" button that jumps to the corresponding lesson
+- **9 new tests** in `test_tutorial_tips.py` covering tips API, technique detail, stats endpoint, auth requirement
+
+**Design decisions:**
+- Tips are separate from lessons — shorter, actionable guidance for in-game use
+- Each tip links to its corresponding lesson via `lesson_id` for deeper learning
+- Stats endpoint provides per-level progress breakdown — useful for future achievement system
+- Tip button is in the action panel alongside other game controls — always accessible during play
+
+**Test results:** 27 total (11 unit tutorial + 9 tips + 7 E2E), all pass
+
+**Next: Batch 5** — Tutorial dashboard: progress overview in the tutorial sidebar showing completion stats. Also add practice puzzles for intermediate techniques.
