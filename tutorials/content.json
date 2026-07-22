@@ -467,6 +467,25 @@
           "description": "There are several types:\n- Type 1: One cell has extra candidates — eliminate A, B from it\n- Type 2: One cell has one extra candidate C — eliminate C from cells seeing the UR\n- Type 3: Extra candidates form a pair with another cell — eliminate based on the pair\n- Type 4: A naked single in one cell eliminates one of the UR candidates\n\nURs are powerful because they use meta-reasoning (the puzzle has one solution) rather than direct logic.",
           "type": "info",
           "puzzle": null
+        },
+        {
+          "title": "Practice: Unique Rectangle",
+          "description": "Look at the four corner cells of a rectangle: (0,0), (0,4), (4,0), and (4,4). Three of them already contain {2, 7}. If the fourth also had only {2, 7}, we'd have two solutions — impossible! So the fourth cell must have another candidate. Click the highlighted cell and enter the value that must go there to avoid the ambiguity.",
+          "type": "practice",
+          "puzzle": [
+            [2, 0, 0, 0, 7, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [7, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ],
+          "highlight_cell": [4, 4],
+          "expected_value": 5,
+          "solution": null
         }
       ]
     },
