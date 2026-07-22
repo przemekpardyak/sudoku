@@ -82,7 +82,7 @@ body::before {
   position: fixed;
   inset: 0;
   background:
-    radial-gradient(circle at 15% 20%, rgba(124, 92, 255, 0.15), transparent 45%),
+    radial-gradient(circle at 15% 20%, var(--accent-glow), transparent 45%),
     radial-gradient(circle at 85% 80%, rgba(61, 220, 151, 0.08), transparent 45%);
   pointer-events: none;
   z-index: 0;
@@ -1211,4 +1211,17 @@ body::before {
 .tutorial-recommend:hover {
   background: var(--accent);
   color: white;
+}
+
+/* Tutorial info card for info-type steps */
+.tutorial-info-card {
+  padding: 20px;
+  margin: 16px 0;
+  background: var(--highlight);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-mute);
+  white-space: pre-line;
 }

@@ -27,6 +27,9 @@
 <!-- Format: - [requirement text] -->
 <!--         - ✅ Done: [summary] or 🚧 In progress or ❌ Failed: [why] or ⏳ Pending -->
 
+- Lessons not working. I entered the learn mode.  I see a lesson "Grid".  There's a description. Nothing visual, which may be by design, though I'd prefer if something meaningful is always displayed below.  Real issue: the next button doesn't work.  Fully test all lesson flows and make sure they work.
+
+
 - login popup changes color unexpectedly.  I refreshed the landing page.  Got the loging popup.  I started typing.  It changed colors from brigt to dark . Later vice versa.  Stick with a single theme. Pick a default (I prefer the dark one).  Then remember the last theme used 
   - 🚧 In progress
   - **Why:** Login overlay flashes between light/dark during typing — likely a race condition between theme load from localStorage and CSS rendering. Bad UX.
@@ -44,6 +47,10 @@
 ## Draft
 
 <!-- Partially drafted requirements not ready for the loop yet.  Wait until user moves them to the Active Requirements section. -->
+
+- each tip should include examples that can be reviewed by the user.  These should be a small sample puzzle and the solution to it in the lesson itself, so that the user can see what it looks like.  I  think it makes sense to always have the solution for each tip displayed in the lesson.  
+
+- flashing colors still happened once when I tried to log in
 
 
 

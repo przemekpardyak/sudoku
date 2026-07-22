@@ -41,15 +41,27 @@ class TestTutorialUI(TestSudokuE2E):
         self.assertTrue(len(title) > 0, "Tutorial step title should not be empty")
 
     def test_tutorial_navigation_buttons(self):
-        """Next and Previous buttons should work."""
+        """Next and Previous buttons should work and advance content."""
         self.page.goto(APP_URL)
         self.page.click("#learnBtn")
         self.page.wait_for_selector("#tutorialNextBtn")
+        # Get initial step title
+        initial_title = self.page.text_content("#tutorialContent h2")
         # Click Next
         self.page.click("#tutorialNextBtn")
-        self.page.wait_for_timeout(300)
+        self.page.wait_for_timeout(500)
         # Should still be in tutorial
         self.assertTrue(self.page.is_visible("#tutorialOverlay"))
+        # Step title should have changed
+        new_title = self.page.text_content("#tutorialContent h2")
+        self.assertNotEqual(initial_title, new_title,
+                            "Step title should change after clicking Next")
+        # Click Previous
+        self.page.click("#tutorialPrevBtn")
+        self.page.wait_for_timeout(300)
+        prev_title = self.page.text_content("#tutorialContent h2")
+        self.assertEqual(initial_title, prev_title,
+                         "Step title should return to original after Previous")
 
     def test_tutorial_close_button(self):
         """Close button should hide the tutorial overlay."""

@@ -1742,10 +1742,16 @@
       const total = this.currentLesson.steps.length;
       const pct = ((this.currentStepIndex + 1) / total) * 100;
       let content = `<div class="tutorial-progress-bar"><div class="tutorial-progress-bar-fill" style="width:${pct}%"></div></div>`;
-      content += `<h2>${step.title}</h2><div id="tutorialStepDescription">${step.description}</div>`;
+      content += `<h2>${step.title}</h2>`;
+
+      // Style info steps with a visual card
+      if (step.type === 'info') {
+        content += `<div class="tutorial-info-card">${step.description}</div>`;
+      } else {
+        content += `<div id="tutorialStepDescription">${step.description}</div>`;
+      }
 
       // Practice board
-      const practiceDiv = document.getElementById('tutorialPracticeBoard');
       if (step.type === 'practice' && step.puzzle) {
         content += this.renderPracticeBoard(step);
       }
@@ -1850,17 +1856,29 @@
 
     async nextStep() {
       if (!this.currentLesson) return;
-      const step = this.currentLesson.steps[this.currentStepIndex];
-      // Mark step as complete
-      await this.markStepComplete(step);
+      // Save progress in background — don't block UI
+      this.markStepComplete();
 
       if (this.currentStepIndex < this.currentLesson.steps.length - 1) {
         this.currentStepIndex++;
         this.renderStep();
       } else {
         // Lesson complete
-        await this.markLessonComplete();
+        this.markLessonComplete();
         this.renderSidebar();
+        const contentEl = document.getElementById('tutorialContent');
+        contentEl.innerHTML = `
+          <div class="tutorial-step">
+            <div class="tutorial-progress-bar"><div class="tutorial-progress-bar-fill" style="width:100%"></div></div>
+            <h2>✅ Lesson Complete!</h2>
+            <div style="font-size:15px; line-height:1.7; color:var(--text-mute); margin-top:16px;">
+              Great job completing "${this.currentLesson.title}". Your progress has been saved.
+            </div>
+            <div class="tutorial-actions">
+              <button class="action-btn" id="tutorialCloseBtn2">Close</button>
+            </div>
+          </div>`;
+        document.getElementById('tutorialCloseBtn2').addEventListener('click', () => this.close());
       }
     },
 
