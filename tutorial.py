@@ -276,3 +276,26 @@ def get_achievements(progress):
             "unlocked": ach["check"](progress, content),
         })
     return result
+
+
+def get_recommended_lesson(progress):
+    """Return the recommended next lesson based on progress."""
+    content = load_content()
+    completed = set(progress.get("completed_lessons", []))
+
+    # Find first incomplete lesson by order
+    for lesson in sorted(content["lessons"], key=lambda l: l["order"]):
+        if lesson["id"] not in completed:
+            return {
+                "lesson_id": lesson["id"],
+                "title": lesson["title"],
+                "level": lesson["level"],
+                "reason": f"Continue with '{lesson['title']}' — the next lesson in your learning path.",
+            }
+
+    return {
+        "lesson_id": None,
+        "title": "All Complete!",
+        "level": None,
+        "reason": "You've completed all tutorial lessons. Try harder puzzles or review techniques in the Reference tab!",
+    }

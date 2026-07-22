@@ -10,7 +10,7 @@ from flask import Flask, jsonify, render_template, request, session
 from auth import authenticate, create_user, ensure_default_user, get_default_user
 from storage import get_storage
 from sudoku import generate_puzzle
-from tutorial import get_all_lessons, get_lesson, get_initial_progress, get_technique_tips, get_technique, get_tutorial_stats, get_achievements
+from tutorial import get_all_lessons, get_lesson, get_initial_progress, get_technique_tips, get_technique, get_tutorial_stats, get_achievements, get_recommended_lesson
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "sudoku-dev-secret-key-change-in-prod")
@@ -1356,6 +1356,21 @@ def tutorial_achievements():
         progress = get_initial_progress()
     achievements = get_achievements(progress)
     return jsonify({"achievements": achievements})
+
+
+@app.route("/api/tutorials/recommend")
+def tutorial_recommend():
+    """Get recommended next lesson for the current user."""
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Authentication required"}), 401
+
+    storage = get_storage()
+    progress = storage.get_tutorial_progress(user_id)
+    if progress is None:
+        progress = get_initial_progress()
+    recommendation = get_recommended_lesson(progress)
+    return jsonify(recommendation)
 
 
 if __name__ == "__main__":
