@@ -1623,6 +1623,20 @@
       });
 
       let html = '<h3>📚 Lessons</h3>';
+
+      // Continue learning recommendation
+      try {
+        const recRes = await fetch('/api/tutorials/recommend');
+        if (recRes.ok) {
+          const rec = await recRes.json();
+          if (rec.lesson_id) {
+            html += `<div class="tutorial-recommend" id="tutorialRecommend">`;
+            html += `<span>▶ Continue: ${rec.title}</span>`;
+            html += `</div>`;
+          }
+        }
+      } catch (e) { /* not logged in */ }
+
       // Add progress dashboard
       html += await this.renderDashboard();
       for (const [level, lessons] of Object.entries(levels)) {
@@ -1642,6 +1656,19 @@
       sidebar.querySelectorAll('.tutorial-lesson-item').forEach(btn => {
         btn.addEventListener('click', () => this.loadLesson(btn.dataset.lessonId));
       });
+      // Recommendation click handler
+      const recBtn = document.getElementById('tutorialRecommend');
+      if (recBtn) {
+        recBtn.addEventListener('click', async () => {
+          try {
+            const res = await fetch('/api/tutorials/recommend');
+            if (res.ok) {
+              const rec = await res.json();
+              if (rec.lesson_id) this.loadLesson(rec.lesson_id);
+            }
+          } catch (e) { /* ignore */ }
+        });
+      }
     },
 
     async loadStats() {

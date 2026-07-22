@@ -1193,3 +1193,22 @@ body::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Tutorial recommendation */
+.tutorial-recommend {
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tutorial-recommend:hover {
+  background: var(--accent);
+  color: white;
+}
