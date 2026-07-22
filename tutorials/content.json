@@ -354,6 +354,25 @@
           "description": "X-Wing is a 'fish' pattern — the simplest of the fish family (which includes Swordfish and Jellyfish). It eliminates candidates across entire rows/columns, often breaking through tough puzzles that scanning and pairs can't solve.\n\nKey tip: Always look for X-Wings when a number has very few candidates remaining in a row or column.",
           "type": "info",
           "puzzle": null
+        },
+        {
+          "title": "Practice: Spot the X-Wing",
+          "description": "Look at this board. The number 5 has only two candidates in rows 2 and 5, and they're in the same columns (1 and 7). This forms an X-Wing! Click the highlighted cell — it's one of the four X-Wing cells. Since 5 is locked to these four cells, we know 5 must go in one of them in each row. Enter the value that belongs in the highlighted cell.",
+          "type": "practice",
+          "puzzle": [
+            [1, 0, 0, 0, 0, 0, 0, 0, 2],
+            [3, 0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [6, 0, 0, 0, 0, 0, 0, 0, 7],
+            [8, 0, 0, 0, 0, 0, 0, 0, 9],
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [2, 0, 0, 0, 0, 0, 0, 0, 3],
+            [5, 0, 0, 0, 0, 0, 0, 0, 6],
+            [4, 0, 0, 0, 0, 0, 0, 0, 1]
+          ],
+          "highlight_cell": [2, 1],
+          "expected_value": 5,
+          "solution": null
         }
       ]
     },
