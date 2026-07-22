@@ -239,7 +239,7 @@
         {
           "title": "Spot the Naked Pair",
           "description": "Look at the highlighted row. Two cells have pencil marks showing only {3, 5}. Since these two cells must contain 3 and 5 (in some order), no other cell in that row can be 3 or 5. This narrows down the candidates for the remaining cells!",
-          "type": "info",
+          "type": "practice",
           "puzzle": [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [1, 0, 0, 0, 0, 0, 0, 0, 2],
