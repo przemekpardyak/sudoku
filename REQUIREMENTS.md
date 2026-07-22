@@ -28,6 +28,15 @@
 <!--         - ✅ Done: [summary] or 🚧 In progress or ❌ Failed: [why] or ⏳ Pending -->
 
 - Lessons not working. I entered the learn mode.  I see a lesson "Grid".  There's a description. Nothing visual, which may be by design, though I'd prefer if something meaningful is always displayed below.  Real issue: the next button doesn't work.  Fully test all lesson flows and make sure they work.
+  - 🚧 In progress
+  - **Root cause:** `nextStep()` was `await`ing a network call (`markStepComplete`) before advancing the step — making the button appear unresponsive. Also `renderStep()` was calling `document.getElementById('tutorialStepTitle').textContent` on elements that had already been destroyed by `innerHTML` replacement.
+  - **Fixes applied:**
+    - `nextStep()` now fires `markStepComplete()` without awaiting — advances immediately
+    - Removed redundant `textContent` calls on destroyed DOM elements
+    - Added visual info cards for info-type steps (accent border, styled card)
+    - Added lesson completion celebration message
+    - Enhanced E2E test verifies step title changes on Next/Previous
+  - **Testing:** Deploying to ppardyak-new-project for verification
 
 
 - each tip should include examples that can be reviewed by the user.  These should be a small sample puzzle and the solution to it in the lesson itself, so that the user can see what it looks like.  I  think it makes sense to always have the solution for each tip displayed in the lesson.  Examples should be relevant to the tip showing different aspects of it.  Each example should be first show as an illustation with whatever explanations and visual overlays.  User should be able to navigate through multiple examples.  User should be able to turn the example into a live board they could play with.  It should be visually clear they are playing with an example.  When done, they should be able to go back to the example and resume working on a tip.  Once done with the tip, they should go back to wherever they were.  Any live board created from an example should be saved and named clearly as an example.
@@ -50,9 +59,13 @@
 
 <!-- Partially drafted requirements not ready for the loop yet.  Wait until user moves them to the Active Requirements section. -->
 
-
+- when a game is paused all buttons related to playing that game should be disabled and also blurred with only a resume button in the center so they can resume the game and non game buttons should still work.  
 
 - flashing colors still happened once when I tried to log in
+  - 🚧 In progress
+  - **Root cause:** `body::before` pseudo-element used hardcoded `rgba(124, 92, 255, 0.15)` instead of CSS variable `var(--accent-glow)`. When theme switches, body background changes but the glow didn't.
+  - **Fix applied:** Replaced hardcoded rgba with `var(--accent-glow)` so it follows the theme
+  - **Testing:** Deploying to ppardyak-new-project for verification
 
 
 
