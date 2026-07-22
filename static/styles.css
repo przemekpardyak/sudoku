@@ -1144,3 +1144,52 @@ body::before {
   color: var(--accent);
   border-bottom-color: var(--accent);
 }
+
+/* Tutorial achievements */
+.tutorial-achievements {
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.tutorial-achievement {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  opacity: 0.4;
+  transition: all 0.2s ease;
+}
+
+.tutorial-achievement.unlocked {
+  opacity: 1;
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.tutorial-achievement-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tutorial-achievement-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tutorial-achievement-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tutorial-achievement-desc {
+  font-size: 11px;
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

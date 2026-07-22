@@ -1669,6 +1669,24 @@
         html += `</div>`;
       }
       html += '</div>';
+      // Add achievements
+      try {
+        const achRes = await fetch('/api/tutorials/achievements');
+        if (achRes.ok) {
+          const achData = await achRes.json();
+          html += '<div class="tutorial-achievements">';
+          html += '<p class="tutorial-level-title">Achievements</p>';
+          achData.achievements.forEach(a => {
+            html += '<div class="tutorial-achievement ' + (a.unlocked ? 'unlocked' : '') + '">';
+            html += '<span class="tutorial-achievement-icon">' + a.icon + '</span>';
+            html += '<div class="tutorial-achievement-info">';
+            html += '<div class="tutorial-achievement-title">' + a.title + '</div>';
+            html += '<div class="tutorial-achievement-desc">' + a.description + '</div>';
+            html += '</div></div>';
+          });
+          html += '</div>';
+        }
+      } catch (e) { /* not logged in */ }
       return html;
     },
 

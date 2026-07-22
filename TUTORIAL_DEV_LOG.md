@@ -181,3 +181,20 @@ Instead of a separate page, the reference library will be a tab/view within the 
 - Frontend: tab system in the tutorial overlay
 
 **Test results:** All existing 27 tests pass (no new tests needed — reference uses existing tips API)
+
+### 2026-07-22 07:01 UTC — Batch 7: Achievements System
+
+**What was built:**
+- **7 achievements:** First Steps, Beginner Master, Intermediate Master, Advanced Master, Expert Master, Halfway There, Completionist
+- **New API endpoint:** `GET /api/tutorials/achievements` — returns all achievements with unlocked status
+- **Achievement rendering in dashboard:** badges with icons, locked/unlocked styling
+- **6 new tests** in `test_tutorial_achievements.py`
+- CSS for achievement badges (locked = dimmed, unlocked = highlighted with accent border)
+
+**Design:**
+- Achievements are computed from progress (not stored separately) — always in sync
+- Check functions evaluate whether criteria are met (e.g., all beginner lessons complete)
+- Achievements display in the tutorial sidebar below the progress dashboard
+- Locked achievements show at 40% opacity; unlocked have accent-colored borders
+
+**Total tutorial test count:** 33 (11 content + 9 tips + 6 achievements + 7 E2E)

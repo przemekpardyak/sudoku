@@ -194,3 +194,85 @@ def get_tutorial_stats(progress):
         "level_progress": level_progress,
         "completed_steps": len(progress.get("completed_steps", [])),
     }
+
+
+# --- Achievements system ---
+
+_ACHIEVEMENTS = [
+    {
+        "id": "first_lesson",
+        "title": "First Steps",
+        "description": "Complete your first tutorial lesson",
+        "icon": "🎯",
+        "check": lambda progress, content: len(progress.get("completed_lessons", [])) >= 1,
+    },
+    {
+        "id": "beginner_master",
+        "title": "Beginner Master",
+        "description": "Complete all beginner lessons",
+        "icon": "🌱",
+        "check": lambda progress, content: all(
+            l["id"] in progress.get("completed_lessons", [])
+            for l in content["lessons"] if l["level"] == "beginner"
+        ),
+    },
+    {
+        "id": "intermediate_master",
+        "title": "Intermediate Master",
+        "description": "Complete all intermediate lessons",
+        "icon": "⚡",
+        "check": lambda progress, content: all(
+            l["id"] in progress.get("completed_lessons", [])
+            for l in content["lessons"] if l["level"] == "intermediate"
+        ),
+    },
+    {
+        "id": "advanced_master",
+        "title": "Advanced Master",
+        "description": "Complete all advanced lessons",
+        "icon": "🔥",
+        "check": lambda progress, content: all(
+            l["id"] in progress.get("completed_lessons", [])
+            for l in content["lessons"] if l["level"] == "advanced"
+        ),
+    },
+    {
+        "id": "expert_master",
+        "title": "Expert Master",
+        "description": "Complete all expert lessons",
+        "icon": "👑",
+        "check": lambda progress, content: all(
+            l["id"] in progress.get("completed_lessons", [])
+            for l in content["lessons"] if l["level"] == "expert"
+        ),
+    },
+    {
+        "id": "completionist",
+        "title": "Completionist",
+        "description": "Complete every tutorial lesson",
+        "icon": "🏆",
+        "check": lambda progress, content: len(progress.get("completed_lessons", [])) >= len(content["lessons"]),
+    },
+    {
+        "id": "halfway_there",
+        "title": "Halfway There",
+        "description": "Complete 50% of all lessons",
+        "icon": "🚀",
+        "check": lambda progress, content: len(progress.get("completed_lessons", [])) >= len(content["lessons"]) / 2,
+    },
+]
+
+
+def get_achievements(progress):
+    """Return all achievements with their unlocked status."""
+    content = load_content()
+    result = []
+    for ach in _ACHIEVEMENTS:
+        result.append({
+            "id": ach["id"],
+            "title": ach["title"],
+            "description": ach["description"],
+            "icon": ach["icon"],
+            "unlocked": ach["check"](progress, content),
+        })
+    return result
