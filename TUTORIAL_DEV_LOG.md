@@ -308,3 +308,32 @@ Instead of a separate page, the reference library will be a tab/view within the 
 - Social features — share achievements, leaderboard for tutorial completion
 - Video/animation demonstrations of techniques
 - Difficulty assessment — test user's skill level and recommend starting point
+
+### 2026-07-22 07:22 UTC — Batch 10: Advanced Practice Puzzles + UI Polish
+
+**What was built:**
+- X-Wing interactive practice puzzle (advanced)
+- XY-Wing interactive practice puzzle (advanced)
+- Fixed Naked Pairs step type from "info" to "practice" with expected_value
+- Fixed Hidden Pairs step type from "info" to "practice" with expected_value
+- Added 3x3 box borders to mini-board cells for visual clarity
+- Fixed JSON structure issue after XY-Wing insertion
+
+**Total interactive practice puzzles:** 9 (4 beginner + 2 intermediate + 2 advanced + 1 expert)
+**Total lessons:** 13 with 40+ steps
+**Total tests:** 38 (31 unit + 7 E2E)
+**Git commits:** 20+ tutorial-specific commits
+**Latest deploy:** revision sudoku-00029-45v
+
+**Practice puzzle summary:**
+| Lesson | Type | Expected Value |
+|--------|------|----------------|
+| Rules — Try It | practice | 4 |
+| Scanning — Row | practice | 5 |
+| Scanning — Box | practice | 7 |
+| Naked Singles | practice | 4 |
+| Hidden Singles | practice | 7 |
+| Naked Pairs — Spot | practice | 9 |
+| Hidden Pairs — Find | practice | 4 |
+| X-Wing — Spot | practice | 5 |
+| XY-Wing — Elimination | practice | 4 |
