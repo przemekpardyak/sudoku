@@ -1311,11 +1311,10 @@
     if (e.target === helpOverlay) helpOverlay.classList.remove('show');
   });
 
-  // Theme toggle
+  // Theme toggle — theme class is already applied by inline script in <head>
   const themeToggle = document.getElementById('themeToggle');
-  // Load saved theme
-  if (localStorage.getItem('sudoku_theme') === 'light') {
-    document.documentElement.classList.add('light');
+  // Sync button text with current theme state
+  if (document.documentElement.classList.contains('light')) {
     themeToggle.textContent = '☀️';
   }
   themeToggle.addEventListener('click', () => {

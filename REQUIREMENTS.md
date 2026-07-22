@@ -27,7 +27,14 @@
 <!-- Format: - [requirement text] -->
 <!--         - ✅ Done: [summary] or 🚧 In progress or ❌ Failed: [why] or ⏳ Pending -->
 
-
+- login popup changes color unexpectedly.  I refreshed the landing page.  Got the loging popup.  I started typing.  It changed colors from brigt to dark . Later vice versa.  Stick with a single theme. Pick a default (I prefer the dark one).  Then remember the last theme used 
+  - 🚧 In progress
+  - **Why:** Login overlay flashes between light/dark during typing — likely a race condition between theme load from localStorage and CSS rendering. Bad UX.
+  - **Design Decisions:**
+    - Dark theme is the default (user preference)
+    - Theme should be applied before first paint — move localStorage read to head or inline script
+    - Login overlay should inherit the current theme, not have its own
+    - Theme persistence to localStorage already exists (§7.5) — just needs to load synchronously
 
 - Add an app version to the app itself
   - ✅ Done: Added `APP_VERSION = "1.0.0"` constant, `/api/version` endpoint returning `{version, git_commit, deployed_at}`, version display in footer with `.version-display` CSS. 5 unit tests + 1 E2E test. Commit: [`506059e`](file:///usr/local/google/home/ppardyak/Dogfood/sudoku)
@@ -37,6 +44,8 @@
 ## Draft
 
 <!-- Partially drafted requirements not ready for the loop yet.  Wait until user moves them to the Active Requirements section. -->
+
+
 
 ---
 
