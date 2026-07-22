@@ -1410,8 +1410,6 @@
       document.getElementById('themeToggle').click();
     } else if (e.key === '?') {
       document.getElementById('helpOverlay').classList.toggle('show');
-    } else if (e.key.toLowerCase() === 'l') {
-      document.getElementById('learnBtn').click();
     } else if (e.key.toLowerCase() === 'r') {
       resetBoard();
     } else if (e.key === ' ') {
