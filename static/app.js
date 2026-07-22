@@ -1555,7 +1555,7 @@
       }
     },
 
-    renderSidebar() {
+    async renderSidebar() {
       const sidebar = document.getElementById('tutorialLessonList');
       const levels = { beginner: [], intermediate: [], advanced: [], expert: [] };
       this.lessons.forEach(l => {
@@ -1563,6 +1563,8 @@
       });
 
       let html = '<h3>📚 Lessons</h3>';
+      // Add progress dashboard
+      html += await this.renderDashboard();
       for (const [level, lessons] of Object.entries(levels)) {
         if (lessons.length === 0) continue;
         html += `<div class="tutorial-level-section">`;
@@ -1580,6 +1582,34 @@
       sidebar.querySelectorAll('.tutorial-lesson-item').forEach(btn => {
         btn.addEventListener('click', () => this.loadLesson(btn.dataset.lessonId));
       });
+    },
+
+    async loadStats() {
+      try {
+        const res = await fetch('/api/tutorials/stats');
+        if (res.ok) return await res.json();
+      } catch (e) { /* not logged in */ }
+      return null;
+    },
+
+    async renderDashboard() {
+      const stats = await this.loadStats();
+      if (!stats) return '';
+      let html = '<div class="tutorial-dashboard">';
+      html += `<div class="tutorial-dashboard-header">`;
+      html += `<span class="tutorial-dashboard-pct">${Math.round(stats.completion_rate)}%</span>`;
+      html += `<span class="tutorial-dashboard-count">${stats.completed_lessons}/${stats.total_lessons} lessons</span>`;
+      html += `</div>`;
+      html += `<div class="tutorial-progress-bar"><div class="tutorial-progress-bar-fill" style="width:${stats.completion_rate}%"></div></div>`;
+      for (const [level, data] of Object.entries(stats.level_progress)) {
+        if (data.total === 0) continue;
+        html += `<div class="tutorial-level-progress">`;
+        html += `<span class="tutorial-level-name">${level}</span>`;
+        html += `<span class="tutorial-level-count">${data.completed}/${data.total}</span>`;
+        html += `</div>`;
+      }
+      html += '</div>';
+      return html;
     },
 
     async loadLesson(lessonId) {

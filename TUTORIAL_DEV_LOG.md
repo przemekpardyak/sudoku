@@ -148,3 +148,22 @@ Starting Batch 1 now.
 **Test results:** 27 total (11 unit tutorial + 9 tips + 7 E2E), all pass
 
 **Next: Batch 5** — Tutorial dashboard: progress overview in the tutorial sidebar showing completion stats. Also add practice puzzles for intermediate techniques.
+
+### 2026-07-22 06:57 UTC — Batch 5: Tutorial Progress Dashboard
+
+**What was built:**
+- Progress dashboard in tutorial sidebar showing:
+  - Overall completion percentage (large, prominent)
+  - Total lessons completed / total lessons
+  - Progress bar
+  - Per-level breakdown (beginner/intermediate/advanced/expert with completed/total counts)
+- Dashboard data loaded from `/api/tutorials/stats` endpoint
+- CSS styling for dashboard: compact, informative, visually appealing
+- `renderSidebar()` made async to support dashboard data fetching
+
+**Design:**
+- Dashboard appears at the top of the tutorial sidebar, above the lesson list
+- Progress bar uses the same accent color as the rest of the tutorial UI
+- Per-level counts help users understand where they are in their learning journey
+
+**Commits:** Batch 4 + 5 combined commit
